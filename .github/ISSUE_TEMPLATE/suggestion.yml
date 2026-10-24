@@ -1,0 +1,16 @@
+name: Suggestion
+description: An idea for a new effect, a change to an existing one or something else.
+labels: [suggestion]
+body:
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Your suggestion
+      description: What is it?
+    validations:
+      required: true
+  - type: textarea
+    id: reference
+    attributes:
+      label: References
+      description: Screenshots, videos, mod references (if possible) and explain it well.

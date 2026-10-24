@@ -1,0 +1,11 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:water_soften",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "MaskSampler" }
+    ],
+    "uniforms": [
+    ]
+}

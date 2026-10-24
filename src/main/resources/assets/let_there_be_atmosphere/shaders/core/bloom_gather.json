@@ -1,0 +1,14 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:bloom_gather",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "NearSampler" },
+        { "name": "MidSampler" },
+        { "name": "FarSampler" }
+    ],
+    "uniforms": [
+        { "name": "Weights", "type": "float", "count": 3, "values": [ 0.56, 0.32, 0.18 ] }
+    ]
+}

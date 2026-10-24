@@ -1,0 +1,27 @@
+{
+    "vertex": "let_there_be_atmosphere:nether_storm",
+    "fragment": "let_there_be_atmosphere:nether_storm",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "Sampler0" },
+        { "name": "DepthSampler" }
+    ],
+    "uniforms": [
+        { "name": "Transform", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Eye", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Boxes", "type": "float", "count": 4, "values": [ 56.0, 24.0, 56.0, 0.0 ] },
+        { "name": "Cams", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Winds", "type": "float", "count": 4, "values": [ 1.0, 0.0, 14.0, 0.0 ] },
+        { "name": "Ember", "type": "float", "count": 4, "values": [ 1.0, 0.5, 0.1, 1.0 ] },
+        { "name": "Ash", "type": "float", "count": 4, "values": [ 0.2, 0.1, 0.08, 1.0 ] },
+        { "name": "Fume", "type": "float", "count": 4, "values": [ 0.9, 0.5, 0.2, 1.0 ] },
+        { "name": "Murk", "type": "float", "count": 4, "values": [ 0.25, 0.1, 0.05, 1.0 ] },
+        { "name": "Right", "type": "float", "count": 3, "values": [ 1.0, 0.0, 0.0 ] },
+        { "name": "Up", "type": "float", "count": 3, "values": [ 0.0, 1.0, 0.0 ] },
+        { "name": "Clock", "type": "float", "count": 4, "values": [ 0.0, 64.0, 1.0, 0.0 ] },
+        { "name": "FogColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Range", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Depth", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
+    ]
+}

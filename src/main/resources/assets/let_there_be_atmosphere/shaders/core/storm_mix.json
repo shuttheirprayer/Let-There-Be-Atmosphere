@@ -1,0 +1,14 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:storm_mix",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "LayerSampler" },
+        { "name": "LowDepthSampler" },
+        { "name": "DepthSampler" }
+    ],
+    "uniforms": [
+        { "name": "Depth", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
+    ]
+}

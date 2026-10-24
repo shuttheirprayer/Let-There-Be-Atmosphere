@@ -1,0 +1,14 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:nether_glow",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "GlowSampler" }
+    ],
+    "uniforms": [
+        { "name": "ShaftColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "MistColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "StormColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
+    ]
+}

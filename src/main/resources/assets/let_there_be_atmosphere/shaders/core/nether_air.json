@@ -1,0 +1,16 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:nether_air",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "DepthSampler" },
+        { "name": "NoiseSampler" }
+    ],
+    "uniforms": [
+        { "name": "InverseTransform", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ShaftShape", "type": "float", "count": 4, "values": [ 0.0, 0.0, 64.0, 32.0 ] },
+        { "name": "Mist", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.02, 0.0 ] },
+        { "name": "MistShape", "type": "float", "count": 4, "values": [ 0.0, 0.15, 64.0, 96.0 ] }
+    ]
+}

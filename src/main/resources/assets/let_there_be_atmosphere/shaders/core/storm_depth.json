@@ -1,0 +1,11 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:storm_depth",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "DepthSampler" }
+    ],
+    "uniforms": [
+    ]
+}

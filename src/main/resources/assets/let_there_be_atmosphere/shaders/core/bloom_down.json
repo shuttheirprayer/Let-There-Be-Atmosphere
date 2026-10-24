@@ -1,0 +1,13 @@
+{
+    "vertex": "let_there_be_atmosphere:bloom_down",
+    "fragment": "let_there_be_atmosphere:bloom_down",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "DiffuseSampler" },
+        { "name": "AverageSampler" }
+    ],
+    "uniforms": [
+        { "name": "Threshold", "type": "float", "count": 3, "values": [ 0.6, 0.2, 0.0 ] }
+    ]
+}

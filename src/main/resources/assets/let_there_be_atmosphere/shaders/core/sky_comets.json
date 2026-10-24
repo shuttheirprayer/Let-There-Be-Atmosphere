@@ -1,0 +1,14 @@
+{
+    "vertex": "let_there_be_atmosphere:sky_comets",
+    "fragment": "let_there_be_atmosphere:sky_comets",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "TailSampler" },
+        { "name": "HeadSampler" }
+    ],
+    "uniforms": [
+        { "name": "Transform", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Visible", "type": "float", "count": 1, "values": [ 1.0 ] }
+    ]
+}

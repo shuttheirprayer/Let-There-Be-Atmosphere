@@ -1,0 +1,12 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:end_nebula",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "NebulaSampler" }
+    ],
+    "uniforms": [
+        { "name": "Face", "type": "matrix3x3", "count": 9, "values": [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ] }
+    ]
+}

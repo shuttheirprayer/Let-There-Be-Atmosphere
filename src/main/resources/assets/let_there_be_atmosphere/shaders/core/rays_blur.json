@@ -1,0 +1,13 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:rays_blur",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "MaskSampler" }
+    ],
+    "uniforms": [
+        { "name": "Ray", "type": "float", "count": 4, "values": [ 0.5, 0.5, 1.0, 0.95 ] },
+        { "name": "Fall", "type": "float", "count": 2, "values": [ 1.0, 0.0 ] }
+    ]
+}

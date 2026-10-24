@@ -1,0 +1,25 @@
+{
+    "vertex": "let_there_be_atmosphere:storm_rain",
+    "fragment": "let_there_be_atmosphere:storm_rain",
+    "attributes": [
+    ],
+    "samplers": [
+        { "name": "Sampler0" },
+        { "name": "Sampler1" },
+        { "name": "HeightSampler" }
+    ],
+    "uniforms": [
+        { "name": "Transform", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Origin", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Eye", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.001 ] },
+        { "name": "Fall", "type": "float", "count": 4, "values": [ 0.0, 0.0, 1.0, 0.0 ] },
+        { "name": "Shape", "type": "float", "count": 4, "values": [ 1.0, 0.0, 16.0, 0.12 ] },
+        { "name": "HeightCenter", "type": "float", "count": 2, "values": [ 0.0, 0.0 ] },
+        { "name": "Right", "type": "float", "count": 3, "values": [ 1.0, 0.0, 0.0 ] },
+        { "name": "Range", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Reach", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Lag", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "RainFog", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "FogRange", "type": "float", "count": 4, "values": [ 0.0, 256.0, 0.0, 0.0 ] }
+    ]
+}

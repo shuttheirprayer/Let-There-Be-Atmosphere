@@ -1,0 +1,46 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.misanthropy.linggango.let_there_be_atmosphere.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "com.misanthropy.linggango.let_there_be_atmosphere.mixin.AtmosphereMixinPlugin",
+  "refmap": "let_there_be_atmosphere.refmap.json",
+  "client": [
+    "atmosphere.BiomeColorMixin",
+    "atmosphere.BiomeColorsResolverMixin",
+    "atmosphere.CelestialSizeMixin",
+    "atmosphere.CloudColorMixin",
+    "atmosphere.ClientLevelStarsMixin",
+    "atmosphere.CloudRangeMixin",
+    "atmosphere.EndSkyMixin",
+    "atmosphere.FogRendererFluidMixin",
+    "atmosphere.GameRendererGradeMixin",
+    "atmosphere.LevelRendererFluidMixin",
+    "atmosphere.LevelRendererStarAccessor",
+    "atmosphere.LevelRendererStarsMixin",
+    "atmosphere.LightTextureMixin",
+    "atmosphere.LightmapUploadMixin",
+    "atmosphere.ParticleWindMixin",
+    "atmosphere.RainColumnMixin",
+    "atmosphere.RenderTargetColorAccessor",
+    "atmosphere.SkyColorMixin",
+    "atmosphere.StoryCloudRenderMixin",
+    "embeddium.EmbeddiumCloudShaderMixin",
+    "embeddium.EmbeddiumFogOptionsMixin",
+    "embeddium.EmbeddiumGlowShaderMixin",
+    "embeddium.EmbeddiumGlowUniformMixin",
+    "embeddium.EmbeddiumSwayBlockMixin",
+    "embeddium.EmbeddiumSwayEncoderMixin",
+    "embeddium.EmbeddiumSwayShaderMixin",
+    "embeddium.EmbeddiumSwaySinkMixin",
+    "embeddium.EmbeddiumSwayUniformMixin",
+    "embeddium.EmbeddiumSwayVanillaEncoderMixin",
+    "embeddium.EmbeddiumSwayVertexMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1-srcalpha",
+        "srcalpha": "1",
+        "dstalpha": "1-srcalpha"
+    },
+    "vertex": "let_there_be_atmosphere:story_clouds",
+    "fragment": "let_there_be_atmosphere:story_clouds",
+    "attributes": [
+        "Color"
+    ],
+    "samplers": [
+        { "name": "DepthSampler" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ColorModulator", "type": "float", "count": 4, "values": [ 1.0, 1.0, 1.0, 1.0 ] },
+        { "name": "FogColor", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "CloudOffset", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "CellSize", "type": "float", "count": 1, "values": [ 24.0 ] },
+        { "name": "DepthPass", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "FadeRange", "type": "float", "count": 2, "values": [ 256.0, 512.0 ] },
+        { "name": "FogTint", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "SunDir", "type": "float", "count": 3, "values": [ 0.0, 1.0, 0.0 ] },
+        { "name": "SkyTint", "type": "float", "count": 4, "values": [ 0.5, 0.7, 1.0, 1.0 ] },
+        { "name": "Light", "type": "float", "count": 4, "values": [ 1.0, 1.0, 0.0, 0.0 ] },
+        { "name": "Pastel", "type": "float", "count": 4, "values": [ 0.0, 1.0, 0.0, 0.0 ] }
+    ]
+}

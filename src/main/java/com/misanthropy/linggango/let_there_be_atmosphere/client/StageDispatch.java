@@ -38,6 +38,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Rainbow;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Ripples;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Silt;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SkyGlow;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SkyHeights;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.StarSky;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.StormRain;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.StormSky;
@@ -71,7 +72,9 @@ public final class StageDispatch {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onStageHighest(RenderLevelStageEvent event) {
         RenderLevelStageEvent.Stage stage = event.getStage();
-        if (stage == RenderLevelStageEvent.Stage.AFTER_WEATHER) {
+        if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            SkyHeights.flush();
+        } else if (stage == RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             ViewCapture.onRenderViewCaptureStage(event);
             EndAir.onRenderEndAirCapture(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {

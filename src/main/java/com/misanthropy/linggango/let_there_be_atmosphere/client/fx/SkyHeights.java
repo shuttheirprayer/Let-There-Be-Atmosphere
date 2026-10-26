@@ -15,7 +15,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
-final class SkyHeights {
+public final class SkyHeights {
     private SkyHeights() {}
 
     static final int SIZE = 128;
@@ -29,6 +29,7 @@ final class SkyHeights {
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final long[] HELD = new long[CHUNKS * CHUNKS];
     private static final int[] AGE = new int[CHUNKS * CHUNKS];
+    private static final boolean[] DIRTY = new boolean[CHUNKS * CHUNKS];
     private static final boolean[] RAIN = new boolean[16];
     private static final FloatBuffer COLUMN = BufferUtils.createFloatBuffer(16 * 16 * 2);
 
@@ -38,6 +39,7 @@ final class SkyHeights {
     private static int sweep;
     private static int centerX;
     private static int centerZ;
+    private static boolean anyDirty;
 
     static {
         java.util.Arrays.fill(HELD, Long.MIN_VALUE);
@@ -72,6 +74,26 @@ final class SkyHeights {
             }
         }
         sweep = (sweep + 1) % HELD.length;
+    }
+
+    public static void changed(ClientLevel current, BlockPos pos) {
+        if (current != level || pos.getY() < current.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ()) - 1) return;
+        int cx = SectionPos.blockToSectionCoord(pos.getX()), cz = SectionPos.blockToSectionCoord(pos.getZ());
+        int slot = Math.floorMod(cx, CHUNKS) + Math.floorMod(cz, CHUNKS) * CHUNKS;
+        if (HELD[slot] != ((long) cx << 32 | (cz & 0xFFFFFFFFL))) return;
+        DIRTY[slot] = true;
+        anyDirty = true;
+    }
+
+    public static void flush() {
+        if (!anyDirty) return;
+        anyDirty = false;
+        for (int slot = 0; slot < DIRTY.length; slot++) {
+            if (!DIRTY[slot]) continue;
+            DIRTY[slot] = false;
+            long key = HELD[slot];
+            if (key != Long.MIN_VALUE) refresh(slot, slot % CHUNKS, slot / CHUNKS, (int) (key >> 32), (int) key, key);
+        }
     }
 
     private static int wanted(int center, int slot) {

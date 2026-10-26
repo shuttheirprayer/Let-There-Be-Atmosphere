@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -94,7 +95,7 @@ public final class Birds {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel current = mc.level;
         LocalPlayer player = mc.player;
-        if (current == null || player == null || !FxConfig.birds || FxConfig.birdsAmount <= 0.0
+        if (current == null || player == null || !BiomeFx.on(FxConfig.birds, BiomeFx.BIRDS) || BiomeFx.amount(FxConfig.birdsAmount, BiomeFx.BIRDS) <= 0.0
                 || !DynamicFogHandler.active() || !current.dimensionType().hasSkyLight() || current.dimensionType().hasCeiling()) {
             if (anchored) reset();
             Diagnostics.skip(Diagnostics.BIRDS, "disabled or no sky here");
@@ -122,7 +123,7 @@ public final class Birds {
         if (ticks++ % 20 == 0) here = habitat(level.getBiome(eye));
         int habitat = here;
         if (habitat >= 0) {
-            flockTimer -= (float) FxConfig.birdsAmount;
+            flockTimer -= (float) BiomeFx.amount(FxConfig.birdsAmount, BiomeFx.BIRDS);
             if (flockTimer <= 0F) {
                 flockTimer = 240F + RANDOM.nextFloat() * 480F;
                 flock(player, pick(habitat), Mth.nextFloat(RANDOM, 6F, 34F) * (RANDOM.nextBoolean() ? 1F : -1F),
@@ -238,7 +239,7 @@ public final class Birds {
             if (Math.abs(r[0] - x) < 8 && Math.abs(r[2] - z) < 8) return;
         }
         int species = habitat == WOODS && RANDOM.nextFloat() < 0.4F ? ROBIN : FINCH;
-        float wait = Mth.nextFloat(RANDOM, 40F, 120F) / (float) Math.max(FxConfig.birdsAmount, 0.1);
+        float wait = Mth.nextFloat(RANDOM, 40F, 120F) / (float) Math.max(BiomeFx.amount(FxConfig.birdsAmount, BiomeFx.BIRDS), 0.1);
         ROOST.add(new double[]{x + 0.5, top + 0.6, z + 0.5, species, time + wait});
     }
 

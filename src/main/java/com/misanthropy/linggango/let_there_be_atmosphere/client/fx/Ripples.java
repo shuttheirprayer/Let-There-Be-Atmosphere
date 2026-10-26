@@ -64,7 +64,7 @@ public final class Ripples {
         }
         if (mc.isPaused()) return;
         WaveField.begin(level, player.getX(), player.getY(), player.getZ());
-        if (on()) rain(level, player);
+        if (on() && !RainRings.live()) rain(level, player);
         WaveField.tick();
         Diagnostics.mark(Diagnostics.RIPPLES, Diagnostics.detail() ? WaveField.tiles() + " wave tiles" : null);
     }

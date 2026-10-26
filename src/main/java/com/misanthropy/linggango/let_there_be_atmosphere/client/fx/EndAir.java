@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -40,15 +41,15 @@ public final class EndAir {
     }
 
     public static boolean fog(ClientLevel level) {
-        return FxConfig.endFog && here(level);
+        return BiomeFx.on(FxConfig.endFog, BiomeFx.END_FOG) && here(level);
     }
 
     public static float fogNear() {
-        return Mth.clamp(32F / (float) FxConfig.endFogDensity, 12F, 64F);
+        return Mth.clamp(32F / (float) BiomeFx.amount(FxConfig.endFogDensity, BiomeFx.END_FOG), 12F, 64F);
     }
 
     public static float fogFar() {
-        return Mth.clamp(135F / (float) FxConfig.endFogDensity, 70F, 200F);
+        return Mth.clamp(135F / (float) BiomeFx.amount(FxConfig.endFogDensity, BiomeFx.END_FOG), 70F, 200F);
     }
 
     public static void tint(float[] rgb, float biomeR, float biomeG, float biomeB, float voidDepth) {
@@ -62,7 +63,7 @@ public final class EndAir {
 
     public static void onRenderEndAirCapture(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
-        captured = here(Minecraft.getInstance().level) && (FxConfig.endMist || FxConfig.endShadows);
+        captured = here(Minecraft.getInstance().level) && (BiomeFx.on(FxConfig.endMist, BiomeFx.END_MIST) || FxConfig.endShadows);
         if (!captured) return;
         INVERSE.set(event.getProjectionMatrix()).mul(event.getPoseStack().last().pose()).invert();
     }
@@ -71,7 +72,7 @@ public final class EndAir {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
-        if (!here(level) || !(FxConfig.endMist || FxConfig.endShadows)) {
+        if (!here(level) || !(BiomeFx.on(FxConfig.endMist, BiomeFx.END_MIST) || FxConfig.endShadows)) {
             Diagnostics.skip(Diagnostics.END_AIR, "disabled or not the End");
             return;
         }
@@ -84,7 +85,7 @@ public final class EndAir {
 
         Vec3 camera = event.getCamera().getPosition();
         double seconds = (Util.getMillis() % 3_600_000L) / 1000.0;
-        float mist = FxConfig.endMist ? (float) FxConfig.endMistAmount : 0F;
+        float mist = BiomeFx.on(FxConfig.endMist, BiomeFx.END_MIST) ? (float) BiomeFx.amount(FxConfig.endMistAmount, BiomeFx.END_MIST) : 0F;
         float shadow = FxConfig.endShadows ? (float) FxConfig.endShadowAmount : 0F;
         float presence = Mth.clamp(smooth(0.55F, 0.9F, 0.5F + 0.5F * (float) Math.sin(seconds * 0.05 + 1.2)) * shadow, 0F, 1.5F);
 

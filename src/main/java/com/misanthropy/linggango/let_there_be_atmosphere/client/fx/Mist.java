@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import java.util.Arrays;
 import net.minecraft.Util;
@@ -48,7 +49,7 @@ public final class Mist {
     private static int ticks;
 
     static boolean wanted() {
-        return (FxConfig.groundMist || FxConfig.swampMist) && amount > 0.003F && !Float.isNaN(floor);
+        return (BiomeFx.on(FxConfig.groundMist, BiomeFx.GROUND_MIST) || BiomeFx.on(FxConfig.swampMist, BiomeFx.SWAMP_MIST)) && amount > 0.003F && !Float.isNaN(floor);
     }
 
     public static void onMistTick(TickEvent.ClientTickEvent event) {
@@ -56,7 +57,7 @@ public final class Mist {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
-        if (level == null || player == null || !(FxConfig.groundMist || FxConfig.swampMist) || !DynamicFogHandler.active()
+        if (level == null || player == null || !(BiomeFx.on(FxConfig.groundMist, BiomeFx.GROUND_MIST) || BiomeFx.on(FxConfig.swampMist, BiomeFx.SWAMP_MIST)) || !DynamicFogHandler.active()
                 || !level.dimensionType().hasSkyLight() || level.effects().skyType() != DimensionSpecialEffects.SkyType.NORMAL) {
             target = 0F;
             swampTarget = 0F;
@@ -78,11 +79,11 @@ public final class Mist {
             if (biome.is(Tags.Biomes.IS_SWAMP)) swampy += 0.2F;
             if (biome.is(BiomeTags.IS_RIVER)) river += 0.2F;
         }
-        swampTarget = FxConfig.swampMist ? swampy : 0F;
+        swampTarget = BiomeFx.on(FxConfig.swampMist, BiomeFx.SWAMP_MIST) ? swampy * (float) BiomeFx.amount(1.0, BiomeFx.SWAMP_MIST) : 0F;
         base *= 1F + 0.3F * river;
         base = Math.max(base, 0.6F * wetness * (1F - rain));
         base *= 1F - 0.4F * rain;
-        target = FxConfig.groundMist ? Math.min(base, 1F) * (float) FxConfig.groundMistDensity : 0F;
+        target = BiomeFx.on(FxConfig.groundMist, BiomeFx.GROUND_MIST) ? Math.min(base, 1F) * (float) BiomeFx.amount(FxConfig.groundMistDensity, BiomeFx.GROUND_MIST) : 0F;
 
         if (ticks++ % 40 == 0 || Float.isNaN(floorTarget)) floorTarget = sampleFloor(level, player.getBlockX(), player.getBlockZ());
     }

@@ -324,6 +324,13 @@ void main() {
         alpha = 0.55 * fade * (0.7 + 0.3 * sin(t * 1.3 + h.x * 6.283));
         tint = vec3(0.8, 0.95, 0.92);
         sprite = int(h.z * 2.99);
+    } else if (kind == 12) {
+        pos += vec3(sin(t * 0.17 + h.x * 6.283) * 0.3, -(0.1 + 0.12 * h.y) * t + sin(t * 0.23 + h.z * 6.283) * 0.1,
+                cos(t * 0.15 + h.z * 6.283) * 0.3);
+        size = 0.07 + h.y * 0.06;
+        alpha = 0.9 * fade;
+        tint = vec3(0.86, 0.93, 1.0);
+        sprite = int(h.z * 2.99);
     } else {
         float rise = 0.9 - 0.25 * min(t, 2.5);
         pos += vec3((h.x - 0.5) * 0.3 * t + sin(t * 1.2 + h.y * 6.283) * 0.12, rise * t, (h.z - 0.5) * 0.3 * t);
@@ -342,7 +349,8 @@ void main() {
     int block = packed / 16;
     vec3 light = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
     if (kind == 9) light = vec3(1.0);
+    if (kind == 12) light = max(light, vec3(0.8));
     vertexColor = vec4(tint * light, alpha);
-    fogDistance = kind == 9 ? 0.0 : length(world + Offset);
+    fogDistance = kind == 9 ? 0.0 : length(world + Offset) * (kind == 12 ? 0.15 : 1.0);
     spot = vec3(sx, sy, kind == 9 ? 1.0 : kind == 11 ? 2.0 : 0.0);
 }

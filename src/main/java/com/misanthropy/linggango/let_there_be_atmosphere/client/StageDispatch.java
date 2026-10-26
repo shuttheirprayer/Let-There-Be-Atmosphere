@@ -1,6 +1,10 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AirMist;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.FxConfig;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.FishJumps;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Puffs;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AmbientParticles;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AuroraRenderer;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Birds;
@@ -10,6 +14,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CaveDust;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CaveMotes;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CometRenderer;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.DeepDark;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.DeepWater;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.EndAir;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.EndDust;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.EndSky;
@@ -41,6 +46,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Tumbleweeds;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.ViewCapture;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Wake;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaterEdge;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaterReflections;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaterShine;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaterfallFoam;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaveSplash;
@@ -55,6 +61,9 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 @Mod.EventBusSubscriber(modid = Let_there_be_atmosphere.MODID, value = Dist.CLIENT)
 public final class StageDispatch {
     private StageDispatch() {}
@@ -65,12 +74,22 @@ public final class StageDispatch {
         if (stage == RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             ViewCapture.onRenderViewCaptureStage(event);
             EndAir.onRenderEndAirCapture(event);
+        } else if (stage == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            WaterReflections.onRenderReflectionWaterStage(event);
         }
     }
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onStage(RenderLevelStageEvent event) {
         RenderLevelStageEvent.Stage stage = event.getStage();
+        boolean probed = stage == RenderLevelStageEvent.Stage.AFTER_SKY || stage == RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS
+                || stage == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || stage == RenderLevelStageEvent.Stage.AFTER_WEATHER;
+        if (probed) CaptureHook.probeBegin(stage.toString());
+        dispatch(event, stage);
+        if (probed) CaptureHook.probeEnd(stage.toString());
+    }
+
+    private static void dispatch(RenderLevelStageEvent event, RenderLevelStageEvent.Stage stage) {
         if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
             StarSky.onRenderStarSkyStage(event);
             SkyGlow.onRenderSkyStage(event);
@@ -86,6 +105,8 @@ public final class StageDispatch {
             NetherAir.onRenderLavaSurfaceStage(event);
             Litter.onRenderLitterStage(event);
             GrassBlades.onRenderGrassBladeStage(event);
+        } else if (stage == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
+            WaterReflections.onRenderReflectionSolidStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             WaveSplash.onRenderSplashStage(event);
             WaterfallFoam.onRenderWaterfallFoamStage(event);
@@ -96,6 +117,9 @@ public final class StageDispatch {
             NetherPortalFx.onRenderNetherPortalStage(event);
             CaveMotes.onRenderCaveMoteStage(event);
             Butterflies.onRenderButterflyStage(event);
+            AirMist.onRenderAirMistStage(event);
+            Puffs.onRenderPuffsStage(event);
+            FishJumps.onRenderFishJumpsStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             WeatherStorms.onRenderWeatherStormsStage(event);
             StormRain.onRenderStormRainStage(event);
@@ -104,6 +128,7 @@ public final class StageDispatch {
             Birds.onRenderBirdStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             SunPass.onRenderSunPassStage(event);
+            WaterReflections.onRenderReflectionStage(event);
         }
     }
 
@@ -126,42 +151,75 @@ public final class StageDispatch {
         }
     }
 
+    private static final List<Consumer<TickEvent.ClientTickEvent>> FX_TICKS = List.of(
+            WindLife::onWindLifeTick,
+            WeatherStorms::onWeatherStormsTick,
+            WaterfallFoam::onWaterfallFoamTick,
+            WaterShine::onWaterShineTick,
+            WaterEdge::onWaterEdgeTick,
+            Wake::onWakeTick,
+            Tumbleweeds::onTumbleweedsTick,
+            StormSky::onStormSkyTick,
+            Silt::onSiltTick,
+            Ripples::onRipplesTick,
+            Rainbow::onClientTick,
+            Puddles::onPuddleTick,
+            PortalGlow::onPortalGlowTick,
+            NetherPortalFx::onNetherPortalTick,
+            NetherFx::onNetherFxTick,
+            NetherDust::onNetherDustTick,
+            NetherAir::onNetherAirTick,
+            Mist::onMistTick,
+            Litter::onLitterTick,
+            LavaSurface::onLavaSurfaceTick,
+            LavaLife::onLavaLifeTick,
+            Haze::onHazeTick,
+            GrassBlades::onGrassBladeTick,
+            Fireflies::onFireflyTick,
+            EndDust::onEndDustTick,
+            DeepDark::onDeepDarkTick,
+            CometRenderer::onClientTick,
+            CaveDust::onCaveDustTick,
+            Butterflies::onButterflyTick,
+            Bubbles::onBubblesTick,
+            DeepWater::onDeepWaterTick,
+            Birds::onBirdTick,
+            AuroraRenderer::onClientTick,
+            AmbientParticles::onClientTick,
+            AirMist::onAirMistTick,
+            Puffs::onPuffsTick,
+            FishJumps::onFishJumpsTick
+    );
+
+    private static final long FX_TICK_BUDGET_NANOS = 150_000L;
+    private static TickEvent.ClientTickEvent pendingTick;
+    private static int pendingIndex = FX_TICKS.size();
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         DynamicFogHandler.onClientTick(event);
-        WindLife.onWindLifeTick(event);
-        WeatherStorms.onWeatherStormsTick(event);
-        WaterfallFoam.onWaterfallFoamTick(event);
-        WaterShine.onWaterShineTick(event);
-        WaterEdge.onWaterEdgeTick(event);
-        Wake.onWakeTick(event);
-        Tumbleweeds.onTumbleweedsTick(event);
-        StormSky.onStormSkyTick(event);
-        Silt.onSiltTick(event);
-        Ripples.onRipplesTick(event);
-        Rainbow.onClientTick(event);
-        Puddles.onPuddleTick(event);
-        PortalGlow.onPortalGlowTick(event);
-        NetherPortalFx.onNetherPortalTick(event);
-        NetherFx.onNetherFxTick(event);
-        NetherDust.onNetherDustTick(event);
-        NetherAir.onNetherAirTick(event);
-        Mist.onMistTick(event);
-        Litter.onLitterTick(event);
-        LavaSurface.onLavaSurfaceTick(event);
-        LavaLife.onLavaLifeTick(event);
-        Haze.onHazeTick(event);
-        GrassBlades.onGrassBladeTick(event);
-        Fireflies.onFireflyTick(event);
-        EndDust.onEndDustTick(event);
-        DeepDark.onDeepDarkTick(event);
-        CometRenderer.onClientTick(event);
-        CaveDust.onCaveDustTick(event);
-        Butterflies.onButterflyTick(event);
-        Bubbles.onBubblesTick(event);
-        Birds.onBirdTick(event);
-        AuroraRenderer.onClientTick(event);
-        AmbientParticles.onClientTick(event);
+        runPendingFxTicks(Long.MAX_VALUE);
+        if (event.phase == TickEvent.Phase.END && FxConfig.spreadFxTicks) {
+            pendingTick = event;
+            pendingIndex = 0;
+        } else {
+            for (Consumer<TickEvent.ClientTickEvent> tick : FX_TICKS) tick.accept(event);
+        }
         CaptureHook.onCaptureHookTick(event);
+    }
+
+    @SubscribeEvent
+    public static void onRenderTick(TickEvent.RenderTickEvent event) {
+        if (event.phase == TickEvent.Phase.START) runPendingFxTicks(FX_TICK_BUDGET_NANOS);
+    }
+
+    private static void runPendingFxTicks(long budgetNanos) {
+        if (pendingIndex >= FX_TICKS.size()) return;
+        long start = System.nanoTime();
+        TickEvent.ClientTickEvent event = pendingTick;
+        do {
+            FX_TICKS.get(pendingIndex++).accept(event);
+        } while (pendingIndex < FX_TICKS.size() && System.nanoTime() - start < budgetNanos);
+        if (pendingIndex >= FX_TICKS.size()) pendingTick = null;
     }
 }

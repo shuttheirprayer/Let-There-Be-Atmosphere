@@ -1,10 +1,13 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.mixin.atmosphere;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CameraFluid;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.world.level.material.FogType;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,9 +23,15 @@ public abstract class CloudRangeMixin {
     @Unique private float linggango$savedFogEnd;
     @Unique private boolean linggango$fogWidened;
 
-    @Inject(method = "renderClouds", at = @At("HEAD"), require = 0)
+    @Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true, require = 0)
     private void linggango$cloudProbe(PoseStack pose, Matrix4f projection, float partialTick,
                                       double camX, double camY, double camZ, CallbackInfo ci) {
+        if (DynamicFogHandler.active()
+                && CameraFluid.of(Minecraft.getInstance().gameRenderer.getMainCamera()) != FogType.NONE) {
+            Diagnostics.skip(Diagnostics.CLOUDS, "the camera is inside a fluid");
+            ci.cancel();
+            return;
+        }
         Diagnostics.mark(Diagnostics.CLOUDS, "vanilla renderClouds entered");
     }
 

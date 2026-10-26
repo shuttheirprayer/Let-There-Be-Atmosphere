@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -153,6 +154,23 @@ public final class NetherFx {
         return true;
     }
 
+    static void burst(RandomSource random, double x, double surface, double z, int tone) {
+        pop(random, x, surface, z, tone, 4.2F, 16);
+        emit(CROWN, x, surface, z, tone + random.nextFloat(), 0.7F, 3.2F, -0.12F);
+        emit(RING, x, surface, z, tone + random.nextFloat(), 1.5F, 3.6F, -0.3F);
+        emit(ORB, x, surface + 0.1, z, tone + random.nextFloat(), 1.6F, 4.2F, 0F);
+        emit(ORB, x, surface + 0.2, z, tone + random.nextFloat(), 1.1F, 2.8F, 0F);
+        int blobs = 7 + random.nextInt(6);
+        for (int i = 0; i < blobs; i++) {
+            float seed = tone + random.nextFloat();
+            emit(FRAG, x, surface + 0.05, z, seed, 2.8F, 1F, 0F);
+            emit(FRAG, x, surface + 0.05, z, seed, 2.8F, 0.75F, -0.05F);
+            emit(FRAG, x, surface + 0.05, z, seed, 2.8F, 0.55F, -0.1F);
+            emit(FRAG, x, surface + 0.05, z, seed, 2.8F, 0.4F, -0.15F);
+            emit(FRAG, x, surface + 0.05, z, seed, 2.8F, 0.25F, -0.2F);
+        }
+    }
+
     public static void capture(String arg) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return;
@@ -184,7 +202,7 @@ public final class NetherFx {
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null || mc.isPaused()) return;
-        if (!FxConfig.netherRays || !NetherAir.here(level) || !ready()) {
+        if (!BiomeFx.on(FxConfig.netherRays, BiomeFx.NETHER_RAYS) || !NetherAir.here(level) || !ready()) {
             rayInit = false;
             return;
         }
@@ -215,8 +233,8 @@ public final class NetherFx {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
-        boolean rays = FxConfig.netherRays && NetherAir.here(level);
-        boolean lava = FxConfig.lavaParticles;
+        boolean rays = BiomeFx.on(FxConfig.netherRays, BiomeFx.NETHER_RAYS) && NetherAir.here(level);
+        boolean lava = FxConfig.lavaParticles || FxConfig.lavaEruptions;
         if (!rays) Diagnostics.skip(Diagnostics.NETHER_RAYS, FxConfig.netherRays ? "not in the Nether" : "disabled");
         if (!lava) Diagnostics.skip(Diagnostics.LAVA_FX, "disabled");
         if (level == null || !(rays || lava)) return;
@@ -241,7 +259,7 @@ public final class NetherFx {
         Vector3f left = camera.getLeftVector();
         Vector3f up = camera.getUpVector();
         float[] fog = RenderSystem.getShaderFogColor();
-        float rayGain = rays ? Mth.clamp(0.22F * (float) FxConfig.netherRaysStrength * NetherAir.LOOK[3] * (1F - NetherDust.gust()), 0F, 0.3F) : 0F;
+        float rayGain = rays ? Mth.clamp(0.22F * (float) BiomeFx.amount(FxConfig.netherRaysStrength, BiomeFx.NETHER_RAYS) * NetherAir.LOOK[3] * (1F - NetherDust.gust()), 0F, 0.3F) : 0F;
 
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);

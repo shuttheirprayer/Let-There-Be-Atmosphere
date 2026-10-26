@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -35,7 +36,7 @@ public final class Fireflies {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
-        if (level == null || player == null || !FxConfig.fireflies || FxConfig.firefliesAmount <= 0.0
+        if (level == null || player == null || !BiomeFx.on(FxConfig.fireflies, BiomeFx.FIREFLIES) || BiomeFx.amount(FxConfig.firefliesAmount, BiomeFx.FIREFLIES) <= 0.0
                 || !DynamicFogHandler.active() || !level.dimensionType().hasSkyLight()) {
             Diagnostics.skip(Diagnostics.FIREFLIES, "disabled or no sky here");
             return;
@@ -47,7 +48,7 @@ public final class Fireflies {
             Diagnostics.skip(Diagnostics.FIREFLIES, "not night or raining");
             return;
         }
-        budget += night * 0.6F * (float) FxConfig.firefliesAmount;
+        budget += night * 0.6F * (float) BiomeFx.amount(FxConfig.firefliesAmount, BiomeFx.FIREFLIES);
         while (budget >= 1F) {
             budget -= 1F;
             spawn(level, player.getBlockX(), player.getBlockZ());

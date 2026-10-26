@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -43,7 +44,7 @@ public final class EndDust {
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null || mc.isPaused()) return;
-        if (!FxConfig.endDust || FxConfig.endDustAmount <= 0.0 || !DynamicFogHandler.active()
+        if (!BiomeFx.on(FxConfig.endDust, BiomeFx.END_DUST) || BiomeFx.amount(FxConfig.endDustAmount, BiomeFx.END_DUST) <= 0.0 || !DynamicFogHandler.active()
                 || level.effects().skyType() != DimensionSpecialEffects.SkyType.END) {
             chorusCount = 0;
             Diagnostics.skip(Diagnostics.END_DUST, "disabled or not the End");
@@ -51,7 +52,7 @@ public final class EndDust {
         }
         if (CameraFluid.of(mc.gameRenderer.getMainCamera()) != FogType.NONE || !CaveMotes.resolve()) return;
         RandomSource random = level.random;
-        budget += 3.2F * (float) FxConfig.endDustAmount;
+        budget += 3.2F * (float) BiomeFx.amount(FxConfig.endDustAmount, BiomeFx.END_DUST);
         int spawned = 0;
         for (int tries = 0; budget >= 1F && tries < 24; tries++) {
             double x = player.getX() + (random.nextDouble() * 2.0 - 1.0) * RADIUS;
@@ -99,7 +100,7 @@ public final class EndDust {
                 break;
             }
         }
-        if (chorusCount == 0 || random.nextFloat() > 0.4F * (float) Math.min(FxConfig.endDustAmount, 2.0)) return 0;
+        if (chorusCount == 0 || random.nextFloat() > 0.4F * (float) Math.min(BiomeFx.amount(FxConfig.endDustAmount, BiomeFx.END_DUST), 2.0)) return 0;
         int pick = random.nextInt(chorusCount);
         BlockPos at = BlockPos.of(CHORUS[pick]);
         if (!chorus(level.getBlockState(at))) {

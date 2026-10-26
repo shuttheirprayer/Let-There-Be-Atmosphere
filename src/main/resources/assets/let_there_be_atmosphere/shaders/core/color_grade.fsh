@@ -18,8 +18,10 @@ uniform vec4 MistColor;
 uniform vec4 PuddleColor;
 uniform vec4 View;
 uniform vec4 ViewTan;
+uniform vec4 Flare;
 
 in vec2 texCoord;
+flat in float seen;
 
 out vec4 fragColor;
 
@@ -27,7 +29,7 @@ void main() {
     vec4 sun = texture(SunSampler, texCoord);
     float sky = step(0.99, sun.b);
     bool hazy = Haze.x + Haze.y + Haze.z > 0.0;
-    bool hand = (Shadows > 0.5 || hazy) && texelFetch(DepthSampler, ivec2(gl_FragCoord.xy), 0).r < 1.0;
+    bool hand = (Shadows > 0.5 || hazy || BloomStrength > 0.0) && texelFetch(DepthSampler, ivec2(gl_FragCoord.xy), 0).r < 1.0;
     vec3 color;
     float heat = 0.0;
     float frost = 0.0;
@@ -47,7 +49,22 @@ void main() {
     } else {
         color = texelFetch(DiffuseSampler, ivec2(gl_FragCoord.xy), 0).rgb;
     }
-    if (Shadows > 0.5 && !hand) color *= sun.g;
+    if (Shadows > 0.5 && !hand) {
+        ivec2 pixel = ivec2(gl_FragCoord.xy);
+        ivec2 base = pixel / 2;
+        ivec2 lean = (pixel & 1) * 2 - 1;
+        ivec2 edge = textureSize(SunSampler, 0) - 1;
+        float near = texelFetch(SunSampler, clamp(base, ivec2(0), edge), 0).a;
+        float lit = 0.0;
+        float weight = 0.0;
+        for (int i = 0; i < 4; i++) {
+            vec4 s = texelFetch(SunSampler, clamp(base + ivec2(i & 1, i >> 1) * lean, ivec2(0), edge), 0);
+            float w = 1.0 / (1.0 + abs(s.a - near) * 400.0);
+            lit += s.g * w;
+            weight += w;
+        }
+        color *= lit / weight;
+    }
     if (PuddleColor.w > 0.5 && !hand && sun.r * (1.0 - sky) > 0.0) {
         float wet = sun.r * (1.0 - sky);
         vec2 ndc = texCoord * 2.0 - 1.0;
@@ -69,10 +86,23 @@ void main() {
     }
     if (MistColor.w > 0.5 && !hand) color = mix(color, MistColor.rgb, sun.b * (1.0 - sky));
     float noise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-    vec3 glow = texture(BloomSampler, texCoord).rgb;
+    vec3 glow = texture(BloomSampler, texCoord).rgb * (hand ? 0.35 : 1.0);
     glow = max(mix(vec3(dot(glow, vec3(0.2126, 0.7152, 0.0722))), glow, 1.4) * BloomStrength + noise * BloomStrength / 255.0, 0.0);
     color = 1.0 - (1.0 - color) * (1.0 - min(glow, 1.0));
     color = 1.0 - (1.0 - color) * (1.0 - min(Rays * texture(RaySampler, texCoord).r * (1.0 - 0.4 * sky), 1.0));
+    if (Flare.z > 0.0) {
+        vec2 aspect = vec2(Vignette.y, 1.0);
+        vec2 axis = vec2(0.5) - Flare.xy;
+        float at[5] = float[](0.45, 0.8, 1.25, 1.6, 2.1);
+        float size[5] = float[](0.045, 0.022, 0.08, 0.035, 0.13);
+        vec3 tint[5] = vec3[](vec3(1.0, 0.78, 0.5), vec3(0.65, 1.0, 0.75), vec3(0.55, 0.72, 1.0), vec3(1.0, 0.62, 0.86), vec3(0.72, 0.92, 1.0));
+        vec3 flare = vec3(0.0);
+        for (int i = 0; i < 5; i++) {
+            float d = length((texCoord - Flare.xy - axis * at[i]) * aspect) / size[i];
+            flare += tint[i] * (1.0 - smoothstep(0.8, 1.0, d)) * (0.5 + 0.5 * smoothstep(0.3, 0.95, d));
+        }
+        color = 1.0 - (1.0 - color) * (1.0 - min(flare * Flare.z * seen * 0.08, 1.0));
+    }
     float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
     float saturation = mix(Grade.x, SkyGrade.x, sky) * (1.0 - Grade.z * (1.0 - sky) * (1.0 - smoothstep(0.04, 0.3, luma)));
     float chroma = max(color.r, max(color.g, color.b)) - min(color.r, min(color.g, color.b));

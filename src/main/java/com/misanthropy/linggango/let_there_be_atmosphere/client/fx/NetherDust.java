@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -120,11 +121,11 @@ public final class NetherDust {
         storm += (stormTarget - storm) * (stormTarget > storm ? 0.012F : 0.006F);
         if (storm < 0.002F && stormTarget == 0F) storm = 0F;
         pulse(level, random);
-        if (++ticks % 20 == 0) openTarget = openness(level, player);
+        if (++ticks % 20 == 0) openTarget = BiomeFx.on(FxConfig.netherStorms, BiomeFx.NETHER_STORMS) ? openness(level, player) : 0F;
         open += (openTarget - open) * 0.1F;
         sound(mc, random);
 
-        if (!FxConfig.netherDust || FxConfig.netherDustAmount <= 0.0) {
+        if (!BiomeFx.on(FxConfig.netherDust, BiomeFx.NETHER_DUST) || BiomeFx.amount(FxConfig.netherDustAmount, BiomeFx.NETHER_DUST) <= 0.0) {
             Diagnostics.skip(Diagnostics.NETHER_DUST, "disabled");
             return;
         }
@@ -132,7 +133,7 @@ public final class NetherDust {
 
         double eyeX = player.getX(), eyeY = player.getEyeY(), eyeZ = player.getZ();
         int look = NetherAir.lookAt(level, eyeX, eyeY, eyeZ);
-        float amount = (float) FxConfig.netherDustAmount * (1F - 0.8F * gust());
+        float amount = (float) BiomeFx.amount(FxConfig.netherDustAmount, BiomeFx.NETHER_DUST) * (1F - 0.8F * gust());
         int spawned = 0;
 
         emberCarry += EMBERS[look] * 0.9F * amount;
@@ -160,7 +161,7 @@ public final class NetherDust {
 
     private static void schedule(ClientLevel level, RandomSource random) {
         long now = level.getGameTime();
-        float rate = FxConfig.netherStorms ? (float) FxConfig.netherStormRate : 0F;
+        float rate = BiomeFx.on(FxConfig.netherStorms, BiomeFx.NETHER_STORMS) ? (float) BiomeFx.amount(FxConfig.netherStormRate, BiomeFx.NETHER_STORMS) : 0F;
         if (rate <= 0F) {
             stormTarget = now < stormEnd ? 1F : 0F;
             nextStorm = Long.MIN_VALUE;
@@ -219,7 +220,7 @@ public final class NetherDust {
 
     @SubscribeEvent(priority = EventPriority.LOW, receiveCanceled = true)
     public static void onNetherStormFog(ViewportEvent.RenderFog event) {
-        if (storm <= 0.001F || event.getMode() != FogRenderer.FogMode.FOG_TERRAIN || !FxConfig.netherStorms) return;
+        if (storm <= 0.001F || event.getMode() != FogRenderer.FogMode.FOG_TERRAIN || !(FxConfig.netherStorms || BiomeFx.on(false, BiomeFx.NETHER_STORMS))) return;
         float thick = Mth.clamp(storm * open, 0F, 1F);
         float closing = 38F / (float) Math.max(FxConfig.netherStormStrength, 0.3) * (1F - 0.25F * surge);
         event.setNearPlaneDistance(Mth.lerp(thick, event.getNearPlaneDistance(), 3F));
@@ -229,7 +230,7 @@ public final class NetherDust {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onNetherStormFogColor(ViewportEvent.ComputeFogColor event) {
-        if (storm <= 0.001F || !FxConfig.netherStorms) return;
+        if (storm <= 0.001F || !(FxConfig.netherStorms || BiomeFx.on(false, BiomeFx.NETHER_STORMS))) return;
         float[] goal = STORM_FOG[NetherAir.look()];
         long now = Util.getNanos();
         float k = tintReady ? 1F - (float) Math.exp(-Math.min((now - tintAt) / 1.0E9F, 0.25F) * 0.9F) : 1F;

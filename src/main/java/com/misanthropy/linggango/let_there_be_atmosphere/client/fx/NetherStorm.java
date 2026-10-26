@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -71,7 +72,7 @@ public final class NetherStorm {
             frameAt = 0L;
             return;
         }
-        if (!FxConfig.netherStorms) {
+        if (!(FxConfig.netherStorms || BiomeFx.on(false, BiomeFx.NETHER_STORMS))) {
             Diagnostics.skip(Diagnostics.NETHER_STORM, "disabled");
             return;
         }

@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -56,6 +57,7 @@ public final class SunPass {
     static boolean hazeReady;
     static boolean mistReady;
     static boolean puddleReady;
+    static final float[] FLARE = new float[3];
     static final float[] PUDDLE = new float[3];
     private static int sampler = -1;
     private static float exposure;
@@ -81,6 +83,7 @@ public final class SunPass {
         hazeReady = false;
         mistReady = false;
         puddleReady = false;
+        FLARE[2] = 0F;
         if (!ViewCapture.fresh) {
             skipAll("disabled");
             return;
@@ -119,9 +122,14 @@ public final class SunPass {
         if (!sky) {
             Diagnostics.skip(Diagnostics.SHADOWS, "this dimension has no normal sky");
             Diagnostics.skip(Diagnostics.RAYS, "this dimension has no normal sky");
+            Diagnostics.skip(Diagnostics.SUN_SHADOWS, "this dimension has no normal sky");
         }
         float shadow = sky ? shadowStrength(level, mc, camera, sunY, clear) : 0F;
-        float ray = sky ? rayStrength(sunX, sunY, clear) : 0F;
+        float facing = sky ? sunFacing(sunX, sunY, clear * SkyGlow.open(level, camera)) : 0F;
+        float ray = sky ? rayStrength(facing) : 0F;
+        float flare = sky ? flareStrength(facing) : 0F;
+        float occlusion = occlusionStrength();
+        float sunShade = sky ? sunShadowStrength(level, camera, sunY, clear) : 0F;
         Haze.update();
         boolean haze = Haze.wanted() && Haze.mirageAmp() + Haze.nearAmp() + Haze.coldAmp() > 1.0E-5F;
         if (!haze) Diagnostics.skip(Diagnostics.HAZE, FxConfig.heatHaze || FxConfig.coldAir ? "not hot or cold here" : "disabled");
@@ -132,13 +140,14 @@ public final class SunPass {
         if (!puddle) Diagnostics.skip(Diagnostics.PUDDLES, FxConfig.puddles ? "the ground is dry" : "disabled");
         float damp = sky && FxConfig.wetSurfaces && Puddles.heightsLive() ? Puddles.damp() * (float) FxConfig.wetSurfacesStrength : 0F;
         boolean wet = damp > 0.02F;
-        if (shadow <= 0F && ray <= 0F && !haze && !mist && !puddle && !wet && !(sky && StarSky.on())) return;
+        if (shadow <= 0F && ray <= 0F && flare <= 0F && occlusion <= 0F && sunShade <= 0F && !haze && !mist && !puddle && !wet && !(sky && StarSky.on())) return;
 
         RenderTarget main = mc.getMainRenderTarget();
         mask = fit(mask, Math.max(main.width / 2, 1), Math.max(main.height / 2, 1), false);
         float aspect = (float) main.width / Math.max(main.height, 1);
-        float u = ray > 0F ? SUN.x / SUN.w * 0.5F + 0.5F : 0.5F;
-        float v = ray > 0F ? SUN.y / SUN.w * 0.5F + 0.5F : 0.5F;
+        boolean aimed = ray > 0F || flare > 0F;
+        float u = aimed ? SUN.x / SUN.w * 0.5F + 0.5F : 0.5F;
+        float v = aimed ? SUN.y / SUN.w * 0.5F + 0.5F : 0.5F;
 
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
@@ -168,7 +177,7 @@ public final class SunPass {
         }
         GL20.glUniform4f(maskProgram.uniform(2), sunX, Math.max(sunY, 0.2F), ViewCapture.fogStart, ViewCapture.fogEnd);
         GL20.glUniform4f(maskProgram.uniform(3), u, v, ray > 0F ? aspect : 0F, (float) FxConfig.cloudShadowSoftness * 0.5F);
-        if (mist || puddle) SkyProgram.texture(2, Haze.noiseTexture());
+        if (mist || puddle || sunShade > 0F) SkyProgram.texture(2, Haze.noiseTexture());
         boolean heights = Puddles.heightsLive() && SkyHeights.texture() != 0;
         if (heights) SkyProgram.texture(3, SkyHeights.texture());
         double blockX = Math.floor(camera.x);
@@ -194,12 +203,26 @@ public final class SunPass {
         int cover = CloudBlur.takeCover();
         if (cover != 0) SkyProgram.texture(4, cover);
         GL20.glUniform1f(maskProgram.uniform(11), cover != 0 ? 1F : 0F);
+        GL20.glUniform4f(maskProgram.uniform(13), occlusion, 1.5F, main.height * 0.5F * ViewCapture.PROJECTION.m11(), 0F);
+        ViewCapture.VIEW_PROJECTION.get(MATRIX);
+        GL20.glUniformMatrix4fv(maskProgram.uniform(14), false, MATRIX);
+        GL20.glUniform4f(maskProgram.uniform(15), sunX, sunY, sunShade, 40F);
         mask.bindWrite(true);
+        CaptureHook.probeBegin("sun mask");
         maskProgram.draw(3);
+        CaptureHook.probeEnd("sun mask");
         if (filter != 0) GL33.glBindSampler(1, 0);
         maskProgram.end();
         maskReady = mask.getColorTextureId();
-        shadowsReady = shadow > 0F;
+        shadowsReady = shadow > 0F || occlusion > 0F || sunShade > 0F;
+        if (flare > 0F) {
+            FLARE[0] = u;
+            FLARE[1] = v;
+            FLARE[2] = flare;
+            Diagnostics.mark(Diagnostics.FLARE, Diagnostics.detail() ? String.format("strength %.2f, sun at %.2f %.2f", flare, u, v) : null);
+        }
+        if (occlusion > 0F) Diagnostics.mark(Diagnostics.OCCLUSION, null);
+        if (sunShade > 0F) Diagnostics.mark(Diagnostics.SUN_SHADOWS, Diagnostics.detail() ? String.format("strength %.2f, sun height %.2f", sunShade, sunY) : null);
         hazeReady = haze;
         mistReady = mist;
         puddleReady = puddle || wet;
@@ -274,7 +297,7 @@ public final class SunPass {
             SURFACE.move(Direction.UP);
             climb++;
         }
-        light *= SkyGlow.smooth(4F, 12F, level.getBrightness(LightLayer.SKY, SURFACE));
+        light *= SkyGlow.smooth(4F, 12F, level.getBrightness(LightLayer.SKY, SURFACE)) * DeepWater.shallow(partialTick);
         if (climb >= 48 || light < 0.004F) {
             Diagnostics.skip(Diagnostics.WATER_RAYS, "no sunlit open water surface above");
             Diagnostics.skip(Diagnostics.CAUSTICS, "no sunlit open water surface above");
@@ -341,6 +364,7 @@ public final class SunPass {
         Diagnostics.skip(Diagnostics.SHADOWS, reason);
         Diagnostics.skip(Diagnostics.RAYS, reason);
         Diagnostics.skip(Diagnostics.HAZE, reason);
+        Diagnostics.skip(Diagnostics.SUN_SHADOWS, reason);
     }
 
     private static float shadowStrength(ClientLevel level, Minecraft mc, Vec3 camera, float sunY, float clear) {
@@ -365,24 +389,62 @@ public final class SunPass {
         return strength;
     }
 
-    private static float rayStrength(float sunX, float sunY, float clear) {
+    private static float sunFacing(float sunX, float sunY, float clear) {
+        ViewCapture.VIEW_PROJECTION.transform(SUN.set(sunX, sunY, 0F, 0F));
+        if (SUN.w <= 0.05F) return 0F;
+        float outside = Math.max(Math.abs(SUN.x / SUN.w), Math.abs(SUN.y / SUN.w)) * 0.5F - 0.5F;
+        return SkyGlow.smooth(-0.02F, 0.12F, sunY) * (1F - SkyGlow.smooth(0F, 0.6F, outside)) * clear;
+    }
+
+    private static float rayStrength(float facing) {
         if (!FxConfig.godRays || FxConfig.godRayStrength <= 0.0) {
             Diagnostics.skip(Diagnostics.RAYS, "disabled");
             return 0F;
         }
-        ViewCapture.VIEW_PROJECTION.transform(SUN.set(sunX, sunY, 0F, 0F));
-        if (SUN.w <= 0.05F) {
-            Diagnostics.skip(Diagnostics.RAYS, "the sun is behind you");
-            return 0F;
-        }
-        float outside = Math.max(Math.abs(SUN.x / SUN.w), Math.abs(SUN.y / SUN.w)) * 0.5F - 0.5F;
-        float strength = (float) FxConfig.godRayStrength * 1.5F * SkyGlow.smooth(-0.02F, 0.12F, sunY)
-                * (1F - SkyGlow.smooth(0F, 0.6F, outside)) * clear * DynamicFogHandler.skyVisibility();
+        float strength = (float) FxConfig.godRayStrength * 2F * facing;
         if (strength < 0.004F) {
-            Diagnostics.skip(Diagnostics.RAYS, "too faint right now");
+            Diagnostics.skip(Diagnostics.RAYS, "the sun is behind you or too faint");
             return 0F;
         }
         return strength;
+    }
+
+    private static float flareStrength(float facing) {
+        if (!FxConfig.lensFlare || FxConfig.lensFlareStrength <= 0.0) {
+            Diagnostics.skip(Diagnostics.FLARE, "disabled");
+            return 0F;
+        }
+        float strength = (float) FxConfig.lensFlareStrength * facing;
+        if (strength < 0.004F) {
+            Diagnostics.skip(Diagnostics.FLARE, "the sun is behind you or too faint");
+            return 0F;
+        }
+        return strength;
+    }
+
+    private static float sunShadowStrength(ClientLevel level, Vec3 camera, float sunY, float clear) {
+        if (!FxConfig.sunShadows || FxConfig.sunShadowStrength <= 0.0) {
+            Diagnostics.skip(Diagnostics.SUN_SHADOWS, "disabled");
+            return 0F;
+        }
+        if (!Puddles.heightsLive() || SkyHeights.texture() == 0) {
+            Diagnostics.skip(Diagnostics.SUN_SHADOWS, "needs the height map, which runs with cloud shadows, puddles or wet surfaces on");
+            return 0F;
+        }
+        float strength = (float) FxConfig.sunShadowStrength * 0.7F * SkyGlow.smooth(0.04F, 0.2F, sunY) * clear * exposure(level, camera);
+        if (strength < 0.004F) {
+            Diagnostics.skip(Diagnostics.SUN_SHADOWS, "night, rain or no sky light here");
+            return 0F;
+        }
+        return strength;
+    }
+
+    private static float occlusionStrength() {
+        if (!FxConfig.ambientOcclusion || FxConfig.ambientOcclusionStrength <= 0.0) {
+            Diagnostics.skip(Diagnostics.OCCLUSION, "disabled");
+            return 0F;
+        }
+        return (float) FxConfig.ambientOcclusionStrength;
     }
 
     private static float exposure(ClientLevel level, Vec3 camera) {

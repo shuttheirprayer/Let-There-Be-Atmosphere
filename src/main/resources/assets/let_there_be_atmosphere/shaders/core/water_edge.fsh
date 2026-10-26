@@ -8,6 +8,7 @@ uniform vec4 ShoreFog;
 in vec2 world;
 in vec3 lightColor;
 in float fogDistance;
+in float fade;
 flat in ivec2 land;
 flat in vec2 origin;
 
@@ -81,7 +82,7 @@ void main() {
         color = mix(color * alpha, CAST, shadow) / (shadow + alpha * (1.0 - shadow));
         alpha = shadow + alpha * (1.0 - shadow);
     }
-    alpha = min(alpha * Clock.w, 1.0);
+    alpha = min(alpha * Clock.w, 1.0) * fade;
     if (alpha < 0.004) {
         discard;
     }

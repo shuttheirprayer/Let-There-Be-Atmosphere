@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -69,7 +70,7 @@ public final class Butterflies {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel current = mc.level;
         LocalPlayer player = mc.player;
-        if (current == null || player == null || !FxConfig.butterflies || FxConfig.butterfliesAmount <= 0.0
+        if (current == null || player == null || !BiomeFx.on(FxConfig.butterflies, BiomeFx.BUTTERFLIES) || BiomeFx.amount(FxConfig.butterfliesAmount, BiomeFx.BUTTERFLIES) <= 0.0
                 || !DynamicFogHandler.active() || !current.dimensionType().hasSkyLight()) {
             if (anchored) reset();
             Diagnostics.skip(Diagnostics.BUTTERFLIES, "disabled or no sky here");
@@ -94,7 +95,7 @@ public final class Butterflies {
             Diagnostics.skip(Diagnostics.BUTTERFLIES, "not day or raining");
             return;
         }
-        budget += day * 0.25F * (float) FxConfig.butterfliesAmount;
+        budget += day * 0.25F * (float) BiomeFx.amount(FxConfig.butterfliesAmount, BiomeFx.BUTTERFLIES);
         while (budget >= 1F) {
             budget -= 1F;
             spawn(player.getBlockX(), player.getBlockZ());

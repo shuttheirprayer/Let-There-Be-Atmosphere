@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -100,7 +101,7 @@ public final class NetherAir {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
-        if (!here(level) || player == null || !(FxConfig.netherRays || FxConfig.netherMist || FxConfig.netherStorms)) {
+        if (!here(level) || player == null || !(BiomeFx.on(FxConfig.netherRays, BiomeFx.NETHER_RAYS) || BiomeFx.on(FxConfig.netherMist, BiomeFx.NETHER_MIST) || BiomeFx.on(FxConfig.netherStorms, BiomeFx.NETHER_STORMS))) {
             floor = floorTarget = Float.NaN;
             return;
         }
@@ -137,7 +138,7 @@ public final class NetherAir {
         Vec3 camera = event.getCamera().getPosition();
         float dt = ease(level, camera);
         float storm = NetherDust.storm();
-        boolean air = FxConfig.netherMist && FxConfig.netherMistDensity > 0.0 && !Float.isNaN(floor);
+        boolean air = BiomeFx.on(FxConfig.netherMist, BiomeFx.NETHER_MIST) && BiomeFx.amount(FxConfig.netherMistDensity, BiomeFx.NETHER_MIST) > 0.0 && !Float.isNaN(floor);
         if (!air || !DynamicFogHandler.active() || ColorGrade.shaderPackActive() || !ViewCapture.fresh) {
             if (!air) {
                 if (!crustOn()) Diagnostics.skip(Diagnostics.NETHER, "mist and lava surface are off");
@@ -156,7 +157,7 @@ public final class NetherAir {
         }
         RenderTarget main = mc.getMainRenderTarget();
 
-        float mist = (float) FxConfig.netherMistDensity * LOOK[7] * (1F - 0.65F * storm);
+        float mist = (float) BiomeFx.amount(FxConfig.netherMistDensity, BiomeFx.NETHER_MIST) * LOOK[7] * (1F - 0.65F * storm);
         driftX += NetherDust.windX() * (0.4F + 5.5F * storm) * dt;
         driftZ += NetherDust.windZ() * (0.4F + 5.5F * storm) * dt;
 

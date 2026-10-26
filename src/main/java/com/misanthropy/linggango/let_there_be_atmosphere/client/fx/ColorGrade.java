@@ -1,5 +1,6 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
+import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.mixin.atmosphere.RenderTargetColorAccessor;
@@ -70,6 +71,7 @@ public final class ColorGrade {
     private static int puddleUniform;
     private static int viewUniform;
     private static int viewTanUniform;
+    private static int flareUniform;
     private static ShaderInstance down;
     private static int downThreshold;
     private static ShaderInstance gather;
@@ -139,12 +141,14 @@ public final class ColorGrade {
         RenderSystem.disableBlend();
         if (vao == 0) vao = GlStateManager._glGenVertexArrays();
         GlStateManager._glBindVertexArray(vao);
+        CaptureHook.probeBegin("bloom");
         int glow = bloomOn ? bloom(scene, main.filterMode, width, height) : 0;
+        CaptureHook.probeEnd("bloom");
 
         main.bindWrite(true);
         ProgramManager.glUseProgram(shader.getId());
         texture(5, haze ? Haze.noiseTexture() : 0);
-        texture(4, shadows || haze ? main.getDepthTextureId() : 0);
+        texture(4, shadows || haze || glow != 0 ? main.getDepthTextureId() : 0);
         texture(3, sun);
         texture(2, rays);
         texture(1, glow);
@@ -174,6 +178,7 @@ public final class ColorGrade {
         } else {
             GL20.glUniform4f(puddleUniform, 0F, 0F, 0F, 0F);
         }
+        GL20.glUniform4f(flareUniform, SunPass.FLARE[0], SunPass.FLARE[1], sun != 0 ? SunPass.FLARE[2] : 0F, 0F);
         if (sun != 0 && SunPass.mistReady) {
             GL20.glUniform4f(mistUniform, Mist.COLOR[0], Mist.COLOR[1], Mist.COLOR[2], 1F);
         } else {
@@ -198,10 +203,12 @@ public final class ColorGrade {
             GL20.glUniform3f(vignetteUniform, 0F, aspect, 0F);
         }
         if (inPlace) barrier();
+        CaptureHook.probeBegin("grade");
         int linear = haze || mirror ? sceneSampler() : 0;
         if (linear != 0) GL33.glBindSampler(0, linear);
         GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3);
         if (linear != 0) GL33.glBindSampler(0, 0);
+        CaptureHook.probeEnd("grade");
 
         texture(5, 0);
         texture(4, 0);
@@ -234,12 +241,31 @@ public final class ColorGrade {
         float threshold = (float) FxConfig.bloomThreshold;
         ProgramManager.glUseProgram(down.getId());
         GL20.glUniform3f(downThreshold, threshold, BLOOM_KNEE, 1F);
+        texture(2, Minecraft.getInstance().getMainRenderTarget().getDepthTextureId());
         texture(1, mips[BLOOM_LEVELS - 1].getColorTextureId());
         texture(0, scene);
-        if (sceneFilter != GL11.GL_LINEAR) filter(GL11.GL_LINEAR);
+        int linear = sceneSampler();
+        if (linear != 0) {
+            GL33.glBindSampler(0, linear);
+            GL33.glBindSampler(2, linear);
+        } else {
+            if (sceneFilter != GL11.GL_LINEAR) filter(GL11.GL_LINEAR);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE2);
+            filter(GL11.GL_LINEAR);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE0);
+        }
         mips[0].bindWrite(true);
         GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, 3);
-        if (sceneFilter != GL11.GL_LINEAR) filter(sceneFilter);
+        if (linear != 0) {
+            GL33.glBindSampler(0, 0);
+            GL33.glBindSampler(2, 0);
+        } else {
+            if (sceneFilter != GL11.GL_LINEAR) filter(sceneFilter);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE2);
+            filter(GL11.GL_NEAREST);
+            GlStateManager._activeTexture(GL13.GL_TEXTURE0);
+        }
+        texture(2, 0);
         texture(1, 0);
         GL20.glUniform3f(downThreshold, threshold, BLOOM_KNEE, 0F);
         for (int i = 1; i < BLOOM_LEVELS; i++) {
@@ -277,7 +303,7 @@ public final class ColorGrade {
         GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, frame, 0);
     }
 
-    private static int sceneSampler() {
+    static int sceneSampler() {
         if (sceneSampler < 0) {
             GLCapabilities caps = GL.getCapabilities();
             sceneSampler = 0;
@@ -297,7 +323,7 @@ public final class ColorGrade {
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mode);
     }
 
-    private static boolean inPlace() {
+    static boolean inPlace() {
         if (barrier < 0) {
             GLCapabilities caps = GL.getCapabilities();
             barrier = caps.OpenGL45 ? 1 : caps.GL_ARB_texture_barrier ? 2 : caps.GL_NV_texture_barrier ? 3 : 0;
@@ -306,7 +332,7 @@ public final class ColorGrade {
         return barrier > 0;
     }
 
-    private static void barrier() {
+    static void barrier() {
         switch (barrier) {
             case 1 -> GL45C.glTextureBarrier();
             case 2 -> ARBTextureBarrier.glTextureBarrier();
@@ -388,6 +414,7 @@ public final class ColorGrade {
         puddleUniform = GlStateManager._glGetUniformLocation(id, "PuddleColor");
         viewUniform = GlStateManager._glGetUniformLocation(id, "View");
         viewTanUniform = GlStateManager._glGetUniformLocation(id, "ViewTan");
+        flareUniform = GlStateManager._glGetUniformLocation(id, "Flare");
         units(loaded, "DiffuseSampler", "BloomSampler", "RaySampler", "SunSampler", "DepthSampler", "NoiseSampler");
         shader = loaded;
         loadFailed = false;
@@ -396,7 +423,7 @@ public final class ColorGrade {
     private static void bindDown(ShaderInstance loaded) {
         int id = loaded.getId();
         downThreshold = GlStateManager._glGetUniformLocation(id, "Threshold");
-        units(loaded, "DiffuseSampler", "AverageSampler");
+        units(loaded, "DiffuseSampler", "AverageSampler", "DepthSampler");
         down = loaded;
     }
 

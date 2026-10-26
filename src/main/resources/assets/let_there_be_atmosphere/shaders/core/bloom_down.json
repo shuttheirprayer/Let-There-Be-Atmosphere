@@ -5,7 +5,8 @@
     ],
     "samplers": [
         { "name": "DiffuseSampler" },
-        { "name": "AverageSampler" }
+        { "name": "AverageSampler" },
+        { "name": "DepthSampler" }
     ],
     "uniforms": [
         { "name": "Threshold", "type": "float", "count": 3, "values": [ 0.6, 0.2, 0.0 ] }

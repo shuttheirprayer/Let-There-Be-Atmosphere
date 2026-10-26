@@ -98,12 +98,13 @@ public class AtmosphereScreen extends Screen {
 
             {"FxConfig.vividSky", "FxConfig.vividSkyStrength", "FxConfig.sunBurst", "FxConfig.sunBurstStrength", "FxConfig.sunScale", "FxConfig.moonScale", "FxConfig.sunsetFogStrength", "FxConfig.sunsetWide",
              "FxConfig.skyGlowEnabled", "FxConfig.sunGlowStrength", "FxConfig.moonGlowStrength",
-             "FxConfig.godRays", "FxConfig.godRayStrength", "FxConfig.godRayLength"},
+             "FxConfig.godRays", "FxConfig.godRayStrength", "FxConfig.godRayLength", "FxConfig.lensFlare", "FxConfig.lensFlareStrength"},
 
             {"DynamicFogHandler.hazeOverlayEnabled", "DynamicFogHandler.hazeOverlayStrength",
              "FxConfig.hazeBandEnabled", "FxConfig.hazeBandStrength", "FxConfig.hazeBandBottom",
              "FxConfig.hazeBandMiddle", "FxConfig.hazeBandTop", "FxConfig.hazeBandRadius",
-             "FxConfig.groundMist", "FxConfig.swampMist", "FxConfig.groundMistDensity", "FxConfig.groundMistHeight"},
+             "FxConfig.groundMist", "FxConfig.swampMist", "FxConfig.groundMistDensity", "FxConfig.groundMistHeight",
+             "FxConfig.airMist", "FxConfig.airMistAmount"},
 
             {"DynamicFogHandler.starsEnabled", "DynamicFogHandler.starAmount",
              "DynamicFogHandler.starBrightness", "DynamicFogHandler.starTwinkle",
@@ -141,7 +142,7 @@ public class AtmosphereScreen extends Screen {
              "FxConfig.lightningFlash", "FxConfig.lightningFlashStrength",
              "FxConfig.puddles", "FxConfig.rainSplashes", "FxConfig.puddleAmount"},
 
-            {"FxConfig.stormRain", "FxConfig.stormRainAmount", "FxConfig.stormClouds", "FxConfig.stormCloudsStrength",
+            {"FxConfig.stormRain", "FxConfig.stormRainAmount", "FxConfig.lensDrops", "FxConfig.lensDropsAmount", "FxConfig.stormClouds", "FxConfig.stormCloudsStrength",
              "FxConfig.stormBolts", "FxConfig.wetSurfaces", "FxConfig.wetSurfacesStrength", "FxConfig.stormWind",
              "FxConfig.blizzard", "FxConfig.blizzardStrength", "FxConfig.sandstorm", "FxConfig.sandstormStrength",
              "FxConfig.stormRange"},
@@ -170,22 +171,28 @@ public class AtmosphereScreen extends Screen {
              "FxConfig.windSounds", "FxConfig.windSoundVolume", "FxConfig.rustleSounds"},
 
             {"FxConfig.butterflies", "FxConfig.butterfliesAmount", "FxConfig.birds", "FxConfig.birdsAmount",
-             "FxConfig.fireflies", "FxConfig.firefliesAmount", "FxConfig.tumbleweeds"},
+             "FxConfig.fireflies", "FxConfig.firefliesAmount", "FxConfig.tumbleweeds",
+             "FxConfig.breathPuffs", "FxConfig.footstepPuffs", "FxConfig.footstepPuffsAmount"},
 
-            {"FxConfig.skyReflection", "FxConfig.skyReflectionStrength", "FxConfig.waterSparkles", "FxConfig.waterSparklesAmount",
+            {"FxConfig.skyReflection", "FxConfig.skyReflectionStrength", "FxConfig.waterReflections", "FxConfig.waterReflectionStrength",
+             "FxConfig.fishJumps", "FxConfig.fishJumpsAmount", "FxConfig.waterSparkles", "FxConfig.waterSparklesAmount",
              "FxConfig.shoreFoam", "FxConfig.shoreFoamStrength", "FxConfig.waterWake", "FxConfig.waterWakeStrength",
-             "FxConfig.ripples", "FxConfig.ripplesAmount", "FxConfig.waterfallFoam", "FxConfig.waterfallFoamAmount",
+             "FxConfig.ripples", "FxConfig.ripplesAmount", "FxConfig.rainRings", "FxConfig.rainRingsAmount",
+             "FxConfig.waterfallFoam", "FxConfig.waterfallFoamAmount",
              "FxConfig.caustics", "FxConfig.causticsStrength", "FxConfig.waterRays", "FxConfig.waterRaysStrength",
              "FxConfig.underwaterBubbles", "FxConfig.underwaterBubblesAmount",
+             "FxConfig.deepWater", "FxConfig.deepWaterDarkness", "FxConfig.marineSnow", "FxConfig.marineSnowAmount",
+             "FxConfig.deepSounds", "FxConfig.deepSoundsVolume",
              "DynamicFogHandler.waterSaturation", "DynamicFogHandler.waterBrightness"},
 
             {"FxConfig.bloomEnabled", "FxConfig.bloomStrength", "FxConfig.bloomThreshold",
-             "FxConfig.bloomSpread"},
+             "FxConfig.bloomSpread", "FxConfig.ambientOcclusion", "FxConfig.ambientOcclusionStrength",
+             "FxConfig.sunShadows", "FxConfig.sunShadowStrength"},
 
             {"FxConfig.netherRays", "FxConfig.netherRaysStrength", "FxConfig.netherMist", "FxConfig.netherMistDensity",
              "FxConfig.netherDust", "FxConfig.netherDustAmount", "FxConfig.netherStorms", "FxConfig.netherStormRate",
              "FxConfig.lavaCrust", "FxConfig.lavaCrustAmount", "FxConfig.netherStormStrength",
-             "FxConfig.lavaParticles", "FxConfig.lavaParticlesAmount", "FxConfig.netherPortalFx"},
+             "FxConfig.lavaParticles", "FxConfig.lavaParticlesAmount", "FxConfig.lavaEruptions", "FxConfig.netherPortalFx"},
 
             {"FxConfig.endSky", "FxConfig.endDust", "FxConfig.endDustAmount", "FxConfig.endMist", "FxConfig.endMistAmount", "FxConfig.endShadows", "FxConfig.endShadowAmount", "FxConfig.portalGlow",
              "FxConfig.endFog", "FxConfig.endFogDensity", "FxConfig.endPortalFx"},
@@ -735,6 +742,10 @@ public class AtmosphereScreen extends Screen {
                 v -> FxConfig.godRayStrength = v, "How bright the shafts are.");
         slider("Ray Length", (float) FxConfig.godRayLength, 0f, 1f, 0, "%",
                 v -> FxConfig.godRayLength = v, "How far from the sun the shafts reach across the screen.");
+        toggle("Lens Flare", () -> FxConfig.lensFlare, v -> FxConfig.lensFlare = v,
+                "Soft coloured rings across the screen when you look near the sun.");
+        slider("Flare Brightness", (float) FxConfig.lensFlareStrength, 0f, 2f, 2, "x",
+                v -> FxConfig.lensFlareStrength = v, "How bright the rings are.");
     }
 
     private void worldHaze() {
@@ -762,6 +773,10 @@ public class AtmosphereScreen extends Screen {
                 v -> FxConfig.groundMistDensity = v, "How thick the mist is.");
         slider("Mist Height", (float) FxConfig.groundMistHeight, 2f, 40f, 0, " blocks",
                 v -> FxConfig.groundMistHeight = v, "How far above the valley floor the mist reaches.");
+        toggle("Air Mist", () -> FxConfig.airMist, v -> FxConfig.airMist = v,
+                "Big soft pastel wisps of mist float in the open air around you and drift with the wind.");
+        slider("Air Mist Amount", (float) FxConfig.airMistAmount, 0f, 2f, 2, "x",
+                v -> FxConfig.airMistAmount = v, "How many mist wisps float around you.");
     }
 
     private void worldStars() {
@@ -950,6 +965,10 @@ public class AtmosphereScreen extends Screen {
                 "Angled rain streaks that stop at roofs, drip through leaves and splash where they land. Replaces the vanilla rain sheets.");
         slider("Rain Amount", (float) FxConfig.stormRainAmount, 0f, 2f, 2, "x",
                 v -> FxConfig.stormRainAmount = v, "How heavy the rain falls.");
+        toggle("Raindrops On Screen", () -> FxConfig.lensDrops, v -> FxConfig.lensDrops = v,
+                "Drops land on the screen when you look up into the rain, then run and dry off.");
+        slider("Screen Drop Amount", (float) FxConfig.lensDropsAmount, 0f, 2f, 2, "x",
+                v -> FxConfig.lensDropsAmount = v, "How many drops land on the screen.");
         toggle("Storm Sky", () -> FxConfig.stormClouds, v -> FxConfig.stormClouds = v,
                 "A dark rolling cloud deck slides in with the rain, lit from inside by lightning, with flickers and far rumbles in thunderstorms.");
         slider("Storm Sky Strength", (float) FxConfig.stormCloudsStrength, 0f, 1f, 0, "%",
@@ -1143,6 +1162,12 @@ public class AtmosphereScreen extends Screen {
                 "Blinking fireflies drift over grass on warm, clear nights.");
         slider("Firefly Amount", (float) FxConfig.firefliesAmount, 0f, 3f, 2, "x",
                 v -> FxConfig.firefliesAmount = v, "How many fireflies come out at night.");
+        toggle("Breath Clouds", () -> FxConfig.breathPuffs, v -> FxConfig.breathPuffs = v,
+                "You and other creatures puff little clouds of breath in cold places.");
+        toggle("Footstep Puffs", () -> FxConfig.footstepPuffs, v -> FxConfig.footstepPuffs = v,
+                "Steps kick up dust on sand and dirt, powder on snow and splashes in shallow water.");
+        slider("Footstep Amount", (float) FxConfig.footstepPuffsAmount, 0f, 2f, 2, "x",
+                v -> FxConfig.footstepPuffsAmount = v, "How much each step kicks up.");
         toggle("Tumbleweeds", () -> FxConfig.tumbleweeds, v -> FxConfig.tumbleweeds = v,
                 "Tumbleweeds roll across deserts, badlands and savannas, and by the dozen in sandstorms.");
     }
@@ -1152,6 +1177,14 @@ public class AtmosphereScreen extends Screen {
                 "Water picks up the sky's colour, more strongly the flatter you look across it.");
         slider("Reflection Strength", (float) FxConfig.skyReflectionStrength, 0f, 2f, 2, "x",
                 v -> FxConfig.skyReflectionStrength = v, "How much sky colour the water takes on.");
+        toggle("Water Reflections", () -> FxConfig.waterReflections, v -> FxConfig.waterReflections = v,
+                "Calm water mirrors the trees, hills and sky around it. Skipped while a shader pack runs.");
+        slider("Mirror Strength", (float) FxConfig.waterReflectionStrength, 0f, 2f, 2, "x",
+                v -> FxConfig.waterReflectionStrength = v, "How clear the reflections are.");
+        toggle("Jumping Fish", () -> FxConfig.fishJumps, v -> FxConfig.fishJumps = v,
+                "Fish now and then leap out of lakes and oceans with a splash.");
+        slider("Fish Amount", (float) FxConfig.fishJumpsAmount, 0f, 3f, 2, "x",
+                v -> FxConfig.fishJumpsAmount = v, "How often fish jump.");
         toggle("Water Sparkles", () -> FxConfig.waterSparkles, v -> FxConfig.waterSparkles = v,
                 "Pixel sparkles twinkle on moonlit water at night, thickest on the path toward the moon.");
         slider("Sparkle Amount", (float) FxConfig.waterSparklesAmount, 0f, 3f, 2, "x",
@@ -1164,6 +1197,10 @@ public class AtmosphereScreen extends Screen {
                 "Pixel rings spread across the water where rain and leaves land, and things that fall in splash with spray.");
         slider("Ripple Amount", (float) FxConfig.ripplesAmount, 0f, 3f, 2, "x",
                 v -> FxConfig.ripplesAmount = v, "How many ripples appear.");
+        toggle("Rain Rings", () -> FxConfig.rainRings, v -> FxConfig.rainRings = v,
+                "Small pixel rings pop up where raindrops land, across all the water you can see. Needs Embeddium.");
+        slider("Rain Ring Amount", (float) FxConfig.rainRingsAmount, 0f, 3f, 2, "x",
+                v -> FxConfig.rainRingsAmount = v, "How many rain rings appear.");
         toggle("Waterfall Foam", () -> FxConfig.waterfallFoam, v -> FxConfig.waterfallFoam = v,
                 "Waterfalls churn white foam where they land on water or ground, throwing spray and drifting soft mist.");
         slider("Waterfall Foam Amount", (float) FxConfig.waterfallFoamAmount, 0f, 2f, 2, "x",
@@ -1184,6 +1221,18 @@ public class AtmosphereScreen extends Screen {
                 "Streams of bubbles rise from the seabed, thickest round kelp, seagrass, magma and soul sand, wobbling as they climb and popping at the surface.");
         slider("Bubble Amount", (float) FxConfig.underwaterBubblesAmount, 0f, 3f, 2, "x",
                 v -> FxConfig.underwaterBubblesAmount = v, "How many bubble streams there are.");
+        toggle("Deep Water", () -> FxConfig.deepWater, v -> FxConfig.deepWater = v,
+                "The deeper you swim, the darker and closer the water gets.");
+        slider("Deep Water Darkness", (float) FxConfig.deepWaterDarkness, 0f, 1.5f, 2, "x",
+                v -> FxConfig.deepWaterDarkness = v, "How dark the deep water gets.");
+        toggle("Marine Snow", () -> FxConfig.marineSnow, v -> FxConfig.marineSnow = v,
+                "Slow pale specks sink through the water around you, more of them the deeper you go.");
+        slider("Marine Snow Amount", (float) FxConfig.marineSnowAmount, 0f, 3f, 2, "x",
+                v -> FxConfig.marineSnowAmount = v, "How many specks sink around you.");
+        toggle("Deep Sounds", () -> FxConfig.deepSounds, v -> FxConfig.deepSounds = v,
+                "Every minute or two a low distant groan when you are more than 20 blocks under water.");
+        slider("Deep Sounds Volume", (float) FxConfig.deepSoundsVolume, 0f, 2f, 2, "x",
+                v -> FxConfig.deepSoundsVolume = v, "How loud the deep groans are.");
         slider("Water Richness", (float) DynamicFogHandler.waterSaturation, 0f, 2f, 2, "x", v -> {
             DynamicFogHandler.waterSaturation = v;
             vegDirty = true;
@@ -1203,6 +1252,14 @@ public class AtmosphereScreen extends Screen {
                 v -> FxConfig.bloomThreshold = v, "How bright something must be before it glows. Lower and the sky and snow join in.");
         slider("Glow Spread", (float) FxConfig.bloomSpread, 0f, 0.9f, 0, "%",
                 v -> FxConfig.bloomSpread = v, "Tight halos at the low end, a wide dreamy haze at the high end.");
+        toggle("Ambient Occlusion", () -> FxConfig.ambientOcclusion, v -> FxConfig.ambientOcclusion = v,
+                "Soft shade in corners, under overhangs and where things touch the ground. Skipped while a shader pack runs.");
+        slider("Occlusion Strength", (float) FxConfig.ambientOcclusionStrength, 0f, 1.5f, 2, "x",
+                v -> FxConfig.ambientOcclusionStrength = v, "How dark the shade gets.");
+        toggle("Sun Shadows", () -> FxConfig.sunShadows, v -> FxConfig.sunShadows = v,
+                "Trees, walls and mobs near you cast soft shadows away from the sun. Skipped while a shader pack runs.");
+        slider("Shadow Strength", (float) FxConfig.sunShadowStrength, 0f, 1.5f, 2, "x",
+                v -> FxConfig.sunShadowStrength = v, "How dark the shadows get.");
     }
 
     private void worldNether() {
@@ -1232,6 +1289,8 @@ public class AtmosphereScreen extends Screen {
                 "Hand-drawn pixel pops, splats, glowing orbs, ripples and smoke wisps replace the vanilla lava particles.");
         slider("Lava Particle Amount", (float) FxConfig.lavaParticlesAmount, 0f, 2f, 2, "x",
                 v -> FxConfig.lavaParticlesAmount = v, "How busy the lava surface is. Big lava lakes erupt far more than small pools.");
+        toggle("Lava Eruptions", () -> FxConfig.lavaEruptions, v -> FxConfig.lavaEruptions = v,
+                "Now and then a lava pool near you bursts and throws glowing blobs that arc, trail embers and splat back.");
         toggle("Nether Portals", () -> FxConfig.netherPortalFx, v -> FxConfig.netherPortalFx = v,
                 "Lit Nether portals glow violet with a slow pulse, and motes spiral in towards them. The noisy vanilla portal specks next to them are replaced.");
     }

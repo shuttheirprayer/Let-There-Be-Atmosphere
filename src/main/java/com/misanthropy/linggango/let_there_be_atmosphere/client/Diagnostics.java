@@ -81,9 +81,18 @@ public final class Diagnostics {
     public static final int DEEP_DARK = 54;
     public static final int WATERFALL = 55;
     public static final int NETHER_PORTAL = 56;
+    public static final int DEEP_WATER = 57;
+    public static final int AIR_MIST = 58;
+    public static final int OCCLUSION = 59;
+    public static final int FLARE = 60;
+    public static final int SUN_SHADOWS = 61;
+    public static final int REFLECTIONS = 62;
+    public static final int LENS_DROPS = 63;
+    public static final int PUFFS = 64;
+    public static final int FISH = 65;
 
     private static final String[] LABELS = {
-            "fog", "clouds", "story", "comets", "hazeband", "lightmap", "mist", "aurora", "glow", "rainbow", "grade", "bloom", "shadows", "rays", "lightning", "haze", "groundmist", "cave", "puddles", "lava", "waterrays", "litter", "sway", "blades", "shore", "wake", "caustics", "fireflies", "butterflies", "stars", "sparkles", "sheen", "birds", "nether", "netherdust", "endsky", "enddust", "portal", "rain", "storm", "ripples", "blizzard", "sandstorm", "tumbleweeds", "endair", "netherstorm", "netherrays", "lavafx", "wind", "windpush", "windbits", "windsound", "rustle", "bubbles", "deepdark", "waterfall", "netherportal"
+            "fog", "clouds", "story", "comets", "hazeband", "lightmap", "mist", "aurora", "glow", "rainbow", "grade", "bloom", "shadows", "rays", "lightning", "haze", "groundmist", "cave", "puddles", "lava", "waterrays", "litter", "sway", "blades", "shore", "wake", "caustics", "fireflies", "butterflies", "stars", "sparkles", "sheen", "birds", "nether", "netherdust", "endsky", "enddust", "portal", "rain", "storm", "ripples", "blizzard", "sandstorm", "tumbleweeds", "endair", "netherstorm", "netherrays", "lavafx", "wind", "windpush", "windbits", "windsound", "rustle", "bubbles", "deepdark", "waterfall", "netherportal", "deepwater", "airmist", "occlusion", "flare", "sunshadows", "reflections", "lensdrops", "puffs", "fish"
     };
 
     private static final String[] COMPAT = {"embeddium", "rubidium", "sodium", "oculus", "iris", "optifine"};

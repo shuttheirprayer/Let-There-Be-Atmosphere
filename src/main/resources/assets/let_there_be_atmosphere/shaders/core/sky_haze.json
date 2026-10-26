@@ -1,6 +1,6 @@
 {
     "vertex": "let_there_be_atmosphere:sky_haze",
-    "fragment": "let_there_be_atmosphere:sky_color",
+    "fragment": "let_there_be_atmosphere:sky_haze",
     "attributes": [
     ],
     "samplers": [

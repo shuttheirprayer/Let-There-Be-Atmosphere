@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.config;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLPaths;
@@ -65,6 +66,8 @@ public class AtmosphereConfigManager {
         public int foliageHex = -1;
         public int waterHex   = -1;
 
+        public JsonObject effects = null;
+
         public AtmosphereSettings() {}
 
         public AtmosphereSettings(int fogHex, int skyHex, float fogStart, float fogEnd) {
@@ -112,6 +115,7 @@ public class AtmosphereConfigManager {
             this.grassHex = o.grassHex;
             this.foliageHex = o.foliageHex;
             this.waterHex = o.waterHex;
+            this.effects = o.effects == null ? null : o.effects.deepCopy();
         }
     }
 
@@ -193,6 +197,12 @@ public class AtmosphereConfigManager {
                     s.grassHex      = hex(o, "grassHex",     s.grassHex);
                     s.foliageHex    = hex(o, "foliageHex",   s.foliageHex);
                     s.waterHex      = hex(o, "waterHex",     s.waterHex);
+                    if (o.has("effects") && o.get("effects").isJsonObject()) {
+                        s.effects = o.getAsJsonObject("effects");
+                        for (String key : s.effects.keySet()) {
+                            if (BiomeFx.index(key) < 0) Diagnostics.LOG.warn("[atmosphere] biome {} has an unknown effect '{}' in biomes.json", entry.getKey(), key);
+                        }
+                    }
 
                     ResourceLocation loc = ResourceLocation.tryParse(entry.getKey());
                     if (loc != null) ATMOSPHERES.put(loc, s);
@@ -204,19 +214,28 @@ public class AtmosphereConfigManager {
 
     private static volatile int colorOverrideCount = 0;
     private static volatile int skyOverrideCount = 0;
+    private static volatile int effectOverrideCount = 0;
+    private static volatile int effectsVersion = 0;
 
     public static boolean hasColorOverrides() { return colorOverrideCount > 0; }
 
     public static boolean hasSkyOverrides() { return skyOverrideCount > 0; }
 
+    public static boolean hasEffectOverrides() { return effectOverrideCount > 0; }
+
+    public static int effectsVersion() { return effectsVersion; }
+
     public static void refreshOverrideFlags() {
-        int colors = 0, skies = 0;
+        int colors = 0, skies = 0, effects = 0;
         for (AtmosphereSettings s : ATMOSPHERES.values()) {
             if (s.grassHex >= 0 || s.foliageHex >= 0 || s.waterHex >= 0) colors++;
             if (s.skyHex >= 0) skies++;
+            if (s.effects != null && s.effects.size() > 0) effects++;
         }
         colorOverrideCount = colors;
         skyOverrideCount = skies;
+        effectOverrideCount = effects;
+        effectsVersion++;
     }
 
     public static void save() {
@@ -229,6 +248,9 @@ public class AtmosphereConfigManager {
 
     public static String toJson() {
         JsonObject root = new JsonObject();
+        JsonArray notes = new JsonArray();
+        for (String line : NOTES) notes.add(line);
+        root.add("_notes", notes);
         for (Map.Entry<ResourceLocation, AtmosphereSettings> e : ATMOSPHERES.entrySet()) {
             root.add(e.getKey().toString(), serialize(e.getValue()));
         }
@@ -268,8 +290,23 @@ public class AtmosphereConfigManager {
         o.addProperty("grassHex",      s.grassHex      < 0 ? "auto" : hexStr(s.grassHex));
         o.addProperty("foliageHex",    s.foliageHex    < 0 ? "auto" : hexStr(s.foliageHex));
         o.addProperty("waterHex",      s.waterHex      < 0 ? "auto" : hexStr(s.waterHex));
+        if (s.effects != null && s.effects.size() > 0) o.add("effects", s.effects.deepCopy());
         return o;
     }
+
+    private static final String[] NOTES = {
+            "Each entry below is one biome, named by its id. Only biomes listed here are changed.",
+            "Per-biome effects: add an \"effects\" block to a biome to change effects only while you stand in it.",
+            "  false (or \"off\") turns the effect off in that biome. true (or \"on\") turns it on there even if it is off in settings.",
+            "  A number multiplies the effect's amount or strength from settings: 0.5 is half, 2 is double, 0 hides it.",
+            "  To set both, write {\"on\": true, \"amount\": 1.5}. Effects you leave out follow settings.properties.",
+            "  Example: \"effects\": { \"heatHaze\": false, \"netherDust\": 0.5 }",
+            "Effects you can use: heatHaze (also the Nether's wobbly heat air), coldAir, netherMist, netherRays, netherDust,",
+            "  netherStorms, caveDust, caveSparkle, groundMist, swampMist, fireflies, butterflies, birds, fallingLeaves,",
+            "  tumbleweeds, windParticles, windBits, endDust, endMist, endFog.",
+            "The biome is the one at your eyes, so effects switch as you cross a biome border.",
+            "This _notes block is rewritten on every save; editing it does nothing."
+    };
 
     private static String hexStr(int v) { return String.format("#%06X", v & 0xFFFFFF); }
 

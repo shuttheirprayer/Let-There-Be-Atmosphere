@@ -31,7 +31,9 @@ public final class Silt {
         if (level == null || mc.player == null || mc.isPaused() || !FxConfig.caustics || !DynamicFogHandler.active()) return;
         if (CameraFluid.of(mc.gameRenderer.getMainCamera()) != FogType.WATER || !CaveMotes.resolve()) return;
         Vec3 eye = mc.gameRenderer.getMainCamera().getPosition();
+        float shallow = DeepWater.shallow(1F);
         for (int i = 0; i < 3; i++) {
+            if (RANDOM.nextFloat() >= shallow) continue;
             double x = eye.x + (RANDOM.nextDouble() * 2.0 - 1.0) * 7.0;
             double y = eye.y + (RANDOM.nextDouble() * 2.0 - 1.0) * 4.0;
             double z = eye.z + (RANDOM.nextDouble() * 2.0 - 1.0) * 7.0;

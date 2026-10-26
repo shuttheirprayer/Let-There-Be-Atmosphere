@@ -23,5 +23,5 @@ void main() {
     }
     vec2 offset = (texCoord - Ray.xy) * vec2(Fall.x, 1.0);
     float light = sum / total;
-    fragColor = vec4(Fall.y > 0.0 ? light * light * exp(-dot(offset, offset) * Fall.y) : light);
+    fragColor = vec4(Fall.y > 0.0 ? light * sqrt(light) * exp(-dot(offset, offset) * Fall.y) : light);
 }

@@ -79,21 +79,42 @@ void main() {
         alpha = 1.0 - smoothstep(0.7, 1.0, f);
         fogAmount = 1.0;
     } else if (kind == 2) {
+        bool big = b.z > 0.0;
+        bool head = b.z > 0.9;
         float ang = h.x * 6.2832;
-        float push = 0.5 + 1.3 * h.y;
-        float up = 2.4 + 2.2 * h.z;
+        float push = big ? 0.6 + 1.3 * h.y : 0.5 + 1.3 * h.y;
+        float up = big ? 8.1 + 3.4 * h.z : 2.4 + 2.2 * h.z;
+        float land = up / 5.5;
         float rise = up * t - 5.5 * t * t;
-        if (rise < -0.04) {
-            hide();
-            return;
+        if (head && t > land) {
+            float g = (t - land) / 0.55;
+            if (g > 1.0) {
+                hide();
+                return;
+            }
+            vec3 spot = pos + vec3(cos(ang) * push * land, 0.0, sin(ang) * push * land);
+            world = spot + flat_right * (sx * 0.7) + vec3(0.0, qy * 1.4 - 0.084, 0.0);
+            uv = vec2((min(floor(g * 4.0), 3.0) + qx) * 0.125, (1.0 - qy) * 0.25);
+            alpha = 1.0 - smoothstep(0.6, 1.0, g);
+            hot = mix(hot, deep, 0.3);
+        } else {
+            if (rise < -0.04) {
+                hide();
+                return;
+            }
+            vec3 center = pos + vec3(cos(ang) * push * t, rise, sin(ang) * push * t);
+            float cell = head ? 1.2 : big ? 0.9 : 0.5 * (0.8 + 0.5 * h.w);
+            world = center + Right * (sx * cell * 0.5) + Up * (sy * cell * 0.5);
+            if (head) {
+                uv = vec2((floor(h.w * 3.99) + qx) * 0.0625, 0.5 + (1.0 - qy) * 0.125);
+                hot = mix(hot, deep, 0.35 * t / land);
+            } else {
+                float idx = floor(rand(s, 5.0) * 15.99);
+                uv = vec2(0.5 + (mod(idx, 8.0) + qx) * 0.0625, (floor(idx / 8.0) + (1.0 - qy)) * 0.125);
+                alpha = big ? b.z : 1.0 - smoothstep(0.55, 1.0, f);
+                hot = mix(hot, deep, big ? 0.6 : f * 0.8);
+            }
         }
-        vec3 center = pos + vec3(cos(ang) * push * t, rise, sin(ang) * push * t);
-        float cell = 0.5 * (0.8 + 0.5 * h.w);
-        world = center + Right * (sx * cell * 0.5) + Up * (sy * cell * 0.5);
-        float idx = floor(rand(s, 5.0) * 15.99);
-        uv = vec2(0.5 + (mod(idx, 8.0) + qx) * 0.0625, (floor(idx / 8.0) + (1.0 - qy)) * 0.125);
-        alpha = 1.0 - smoothstep(0.55, 1.0, f);
-        hot = mix(hot, deep, f * 0.8);
         fogAmount = 1.0;
     } else if (kind == 3) {
         float cell = (1.0 + 0.8 * h.x) * b.z;

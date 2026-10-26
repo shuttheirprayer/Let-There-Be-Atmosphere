@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -75,7 +76,7 @@ public final class EndSky {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onEndSkyFogColor(ViewportEvent.ComputeFogColor event) {
         if (!on(Minecraft.getInstance().level) || CameraFluid.of(event.getCamera()) != FogType.NONE) return;
-        float mix = FxConfig.endFog ? 0.4F : 0.85F;
+        float mix = BiomeFx.on(FxConfig.endFog, BiomeFx.END_FOG) ? 0.4F : 0.85F;
         event.setRed(Mth.lerp(mix, event.getRed(), HAZE[0]));
         event.setGreen(Mth.lerp(mix, event.getGreen(), HAZE[1]));
         event.setBlue(Mth.lerp(mix, event.getBlue(), HAZE[2]));
@@ -104,7 +105,7 @@ public final class EndSky {
         GL11.glBindTexture(GL13.GL_TEXTURE_CUBE_MAP, sky);
         GL20.glUniformMatrix4fv(program.uniform(0), false, INVERSE);
         GL20.glUniformMatrix3fv(program.uniform(1), false, SPIN_MATRIX);
-        GL20.glUniform4f(program.uniform(2), (seconds / 15F) % 1F, 0.92F, 0.24F, 0F);
+        GL20.glUniform4f(program.uniform(2), (seconds / 15F) % 1F, 0.92F, 0.24F, 1F);
         GL20.glUniform4f(program.uniform(3), fog[0], fog[1], fog[2], 0.4F);
         program.draw(3);
         GL11.glBindTexture(GL13.GL_TEXTURE_CUBE_MAP, 0);

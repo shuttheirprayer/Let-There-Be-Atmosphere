@@ -24,6 +24,8 @@ public final class CaptureHook {
     private static int index;
     private static int waiting;
     private static String pin;
+    private static boolean showGui;
+    private static boolean probes = true;
 
     private static int burst;
     private static int burstIndex;
@@ -80,7 +82,7 @@ public final class CaptureHook {
         if (steps.isEmpty() || mc.level == null || mc.player == null) return;
         MinecraftServer server = mc.getSingleplayerServer();
         if (server == null) return;
-        mc.options.hideGui = true;
+        mc.options.hideGui = !showGui;
         if (pin != null) run(server, pin);
         if (waiting > 0) { waiting--; return; }
         while (index < steps.size()) {
@@ -100,6 +102,39 @@ public final class CaptureHook {
                     Diagnostics.LOG.info("[capture] grabbed {}", arg);
                 }
                 case "fps" -> Diagnostics.LOG.info("[capture] fps {} {}", arg, mc.getFps());
+                case "gui" -> showGui = arg.equals("on");
+                case "probes" -> probes = arg.equals("on");
+                case "rd" -> {
+                    mc.options.renderDistance().set(Integer.parseInt(arg));
+                    mc.levelRenderer.needsUpdate();
+                    Diagnostics.LOG.info("[capture] rd {}", mc.options.renderDistance().get());
+                }
+                case "fogocc" -> {
+                    try {
+                        Object options = Class.forName("me.jellysquid.mods.sodium.client.SodiumClientMod").getMethod("options").invoke(null);
+                        Object performance = options.getClass().getField("performance").get(options);
+                        performance.getClass().getField("useFogOcclusion").setBoolean(performance, arg.equals("on"));
+                        mc.levelRenderer.needsUpdate();
+                        Diagnostics.LOG.info("[capture] fogocc {}", arg);
+                    } catch (ReflectiveOperationException e) {
+                        Diagnostics.LOG.error("[capture] fogocc failed", e);
+                    }
+                }
+                case "luma" -> {
+                    try {
+                        String[] kv = arg.split(" ");
+                        Object value = Class.forName("com.misanthropy.linggango.linggango_tweaks.config.LumalightConfig").getField(kv[0]).get(null);
+                        value.getClass().getMethod("set", Object.class).invoke(value, Boolean.parseBoolean(kv[1]));
+                        Diagnostics.LOG.info("[capture] luma {}", arg);
+                    } catch (ReflectiveOperationException e) {
+                        Diagnostics.LOG.error("[capture] luma failed", e);
+                    }
+                }
+                case "clouds" -> mc.options.cloudStatus().set(net.minecraft.client.CloudStatus.valueOf(arg.toUpperCase(java.util.Locale.ROOT)));
+                case "client" -> {
+                    boolean ran = net.minecraftforge.client.ClientCommandHandler.runCommand(arg);
+                    Diagnostics.LOG.info("[capture] client {} {}", arg, ran);
+                }
                 case "fpscap" -> {
                     mc.options.enableVsync().set(false);
                     mc.options.framerateLimit().set(Integer.parseInt(arg));
@@ -134,7 +169,7 @@ public final class CaptureHook {
     private static final java.util.Map<String, long[]> PROBES = new java.util.HashMap<>();
 
     public static void probeBegin(String name) {
-        if (steps == null || steps.isEmpty()) return;
+        if (steps == null || steps.isEmpty() || !probes) return;
         long[] p = PROBES.computeIfAbsent(name, k -> {
             long[] a = new long[4 + 3];
             for (int i = 0; i < 4; i++) a[i] = org.lwjgl.opengl.GL15.glGenQueries();
@@ -155,6 +190,7 @@ public final class CaptureHook {
     }
 
     public static void probeEnd(String name) {
+        if (steps == null || steps.isEmpty() || !probes) return;
         long[] p = PROBES.get(name);
         if (p == null) return;
         org.lwjgl.opengl.GL15.glEndQuery(org.lwjgl.opengl.GL33.GL_TIME_ELAPSED);

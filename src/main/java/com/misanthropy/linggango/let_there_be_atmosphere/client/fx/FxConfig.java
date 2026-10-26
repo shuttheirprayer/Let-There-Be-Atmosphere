@@ -51,6 +51,8 @@ public final class FxConfig {
     public static boolean godRays        = true;
     public static double  godRayStrength = 0.6;
     public static double  godRayLength   = 0.4;
+    public static boolean lensFlare         = true;
+    public static double  lensFlareStrength = 0.6;
     public static boolean waterRays         = true;
     public static double  waterRaysStrength = 1.0;
     public static boolean caustics          = false;
@@ -81,6 +83,10 @@ public final class FxConfig {
     public static double  bloomStrength  = 1.0;
     public static double  bloomThreshold = 0.85;
     public static double  bloomSpread    = 0.75;
+    public static boolean ambientOcclusion         = true;
+    public static double  ambientOcclusionStrength = 0.45;
+    public static boolean sunShadows               = true;
+    public static double  sunShadowStrength        = 0.5;
 
     public static boolean sunLightTint     = true;
     public static double  sunLightStrength = 0.55;
@@ -137,6 +143,7 @@ public final class FxConfig {
     public static double  netherStormStrength = 1.0;
     public static boolean lavaParticles      = false;
     public static double  lavaParticlesAmount = 1.0;
+    public static boolean lavaEruptions      = true;
 
     public static boolean groundLitter         = true;
     public static double  groundLitterAmount   = 0.5;
@@ -149,22 +156,34 @@ public final class FxConfig {
     public static double  oreGlowStrength      = 1.0;
     public static boolean stemPulse            = true;
     public static boolean grassBlades         = true;
+    public static boolean spreadFxTicks        = true;
     public static boolean shoreFoam            = true;
     public static double  shoreFoamStrength    = 0.6;
     public static boolean waterWake            = true;
     public static double  waterWakeStrength    = 1.0;
     public static boolean ripples              = true;
     public static double  ripplesAmount        = 1.0;
+    public static boolean rainRings            = true;
+    public static double  rainRingsAmount      = 1.0;
     public static boolean waterfallFoam        = true;
     public static double  waterfallFoamAmount  = 1.0;
     public static boolean waterSparkles        = false;
     public static double  waterSparklesAmount  = 1.0;
     public static boolean skyReflection        = false;
     public static double  skyReflectionStrength = 1.0;
+    public static boolean waterReflections        = true;
+    public static double  waterReflectionStrength = 0.8;
+    public static boolean fishJumps               = true;
+    public static double  fishJumpsAmount         = 1.0;
     public static boolean fireflies            = true;
     public static double  firefliesAmount      = 1.0;
+    public static boolean breathPuffs          = true;
+    public static boolean footstepPuffs        = true;
+    public static double  footstepPuffsAmount  = 1.0;
     public static boolean butterflies          = true;
     public static double  butterfliesAmount    = 1.0;
+    public static boolean airMist              = true;
+    public static double  airMistAmount        = 1.0;
     public static boolean birds                = false;
     public static double  birdsAmount          = 1.0;
     public static double  grassBladesDensity   = 1.0;
@@ -187,6 +206,12 @@ public final class FxConfig {
     public static boolean endPortalFx          = true;
     public static boolean underwaterBubbles    = true;
     public static double  underwaterBubblesAmount = 1.0;
+    public static boolean deepWater            = true;
+    public static double  deepWaterDarkness    = 1.0;
+    public static boolean marineSnow           = true;
+    public static double  marineSnowAmount     = 1.0;
+    public static boolean deepSounds           = true;
+    public static double  deepSoundsVolume     = 1.0;
     public static boolean deepDarkHaze         = true;
     public static double  sunBurstStrength     = 1.0;
     public static double  vividSkyStrength     = 0.85;
@@ -208,6 +233,8 @@ public final class FxConfig {
     public static boolean stormRain            = false;
     public static boolean stormRange           = false;
     public static double  stormRainAmount      = 1.0;
+    public static boolean lensDrops            = false;
+    public static double  lensDropsAmount      = 1.0;
     public static boolean stormClouds          = false;
     public static double  stormCloudsStrength  = 1.0;
     public static boolean stormBolts           = false;
@@ -260,6 +287,8 @@ public final class FxConfig {
         godRays             = bool(p, "godRays",          true);
         godRayStrength      = num(p, "godRayStrength",    0.6,   0.0, 2.0);
         godRayLength        = num(p, "godRayLength",      0.4,   0.0, 1.0);
+        lensFlare           = bool(p, "lensFlare",        true);
+        lensFlareStrength   = num(p, "lensFlareStrength", 0.6,   0.0, 2.0);
         waterRays           = bool(p, "waterRays",        true);
         waterRaysStrength   = num(p, "waterRaysStrength", 1.0,   0.0, 2.0);
         caustics            = bool(p, "caustics",         false);
@@ -285,6 +314,10 @@ public final class FxConfig {
         bloomStrength       = num(p, "bloomStrength",     1.0,   0.0, 2.0);
         bloomThreshold      = num(p, "bloomThreshold",    0.85,  0.0, 1.0);
         bloomSpread         = num(p, "bloomSpread",       0.75,  0.0, 0.9);
+        ambientOcclusion    = bool(p, "ambientOcclusion", true);
+        ambientOcclusionStrength = num(p, "ambientOcclusionStrength", 0.45, 0.0, 1.5);
+        sunShadows          = bool(p, "sunShadows",       true);
+        sunShadowStrength   = num(p, "sunShadowStrength", 0.5,   0.0, 1.5);
         sunLightTint        = bool(p, "sunLightTint",     true);
         sunLightStrength    = num(p, "sunLightStrength",  0.55,  0.0, 1.0);
         sunLightHex         = hex(p, "sunLightHex",       0xFFB775);
@@ -331,6 +364,7 @@ public final class FxConfig {
         netherStormStrength = num(p, "netherStormStrength", 1.0, 0.3, 2.0);
         lavaParticles       = bool(p, "lavaParticles",    false);
         lavaParticlesAmount = num(p, "lavaParticlesAmount", 1.0, 0.0, 2.0);
+        lavaEruptions       = bool(p, "lavaEruptions",    true);
         groundLitter        = bool(p, "groundLitter",     true);
         groundLitterAmount  = num(p, "groundLitterAmount", 0.5,  0.0, 2.0);
         fallingLeaves       = bool(p, "fallingLeaves",    true);
@@ -342,22 +376,34 @@ public final class FxConfig {
         oreGlowStrength     = num(p, "oreGlowStrength",   1.0,   0.0, 2.0);
         stemPulse           = bool(p, "stemPulse",        true);
         grassBlades         = bool(p, "grassBlades",      true);
+        spreadFxTicks       = bool(p, "spreadFxTicks",    true);
         shoreFoam           = bool(p, "shoreFoam",        true);
         shoreFoamStrength   = num(p, "shoreFoamStrength", 0.6,   0.0, 2.0);
         waterWake           = bool(p, "waterWake",        true);
         waterWakeStrength   = num(p, "waterWakeStrength", 1.0,   0.0, 2.0);
         ripples             = bool(p, "ripples",          true);
         ripplesAmount       = num(p, "ripplesAmount",     1.0,   0.0, 3.0);
+        rainRings           = bool(p, "rainRings",        true);
+        rainRingsAmount     = num(p, "rainRingsAmount",   1.0,   0.0, 3.0);
         waterfallFoam       = bool(p, "waterfallFoam",    true);
         waterfallFoamAmount = num(p, "waterfallFoamAmount", 1.0, 0.0, 2.0);
         waterSparkles       = bool(p, "waterSparkles",    false);
         waterSparklesAmount = num(p, "waterSparklesAmount", 1.0, 0.0, 3.0);
         skyReflection       = bool(p, "skyReflection",    false);
         skyReflectionStrength = num(p, "skyReflectionStrength", 1.0, 0.0, 2.0);
+        waterReflections    = bool(p, "waterReflections", true);
+        waterReflectionStrength = num(p, "waterReflectionStrength", 0.8, 0.0, 2.0);
+        fishJumps           = bool(p, "fishJumps",        true);
+        fishJumpsAmount     = num(p, "fishJumpsAmount",   1.0,   0.0, 3.0);
         fireflies           = bool(p, "fireflies",        true);
         firefliesAmount     = num(p, "firefliesAmount",   1.0,   0.0, 3.0);
+        breathPuffs         = bool(p, "breathPuffs",      true);
+        footstepPuffs       = bool(p, "footstepPuffs",    true);
+        footstepPuffsAmount = num(p, "footstepPuffsAmount", 1.0, 0.0, 2.0);
         butterflies         = bool(p, "butterflies",      true);
         butterfliesAmount   = num(p, "butterfliesAmount", 1.0,   0.0, 3.0);
+        airMist             = bool(p, "airMist",          true);
+        airMistAmount       = num(p, "airMistAmount",     1.0,   0.0, 2.0);
         birds               = bool(p, "birds",            false);
         birdsAmount         = num(p, "birdsAmount",       1.0,   0.0, 3.0);
         grassBladesDensity  = num(p, "grassBladesDensity", 1.0,  0.0, 1.0);
@@ -380,6 +426,12 @@ public final class FxConfig {
         endPortalFx         = bool(p, "endPortalFx",      true);
         underwaterBubbles   = bool(p, "underwaterBubbles", true);
         underwaterBubblesAmount = num(p, "underwaterBubblesAmount", 1.0, 0.0, 3.0);
+        deepWater           = bool(p, "deepWater",        true);
+        deepWaterDarkness   = num(p, "deepWaterDarkness", 1.0,   0.0, 1.5);
+        marineSnow          = bool(p, "marineSnow",       true);
+        marineSnowAmount    = num(p, "marineSnowAmount",  1.0,   0.0, 3.0);
+        deepSounds          = bool(p, "deepSounds",       true);
+        deepSoundsVolume    = num(p, "deepSoundsVolume",  1.0,   0.0, 2.0);
         deepDarkHaze        = bool(p, "deepDarkHaze",     true);
         sunBurstStrength    = num(p, "sunBurstStrength",  1.0,   0.0, 2.0);
         vividSkyStrength    = num(p, "vividSkyStrength",  0.85,  0.0, 1.0);
@@ -400,6 +452,8 @@ public final class FxConfig {
         stormRain           = bool(p, "stormRain",        false);
         stormRange          = bool(p, "stormRange",       false);
         stormRainAmount     = num(p, "stormRainAmount",   1.0,   0.0, 2.0);
+        lensDrops           = bool(p, "lensDrops",        false);
+        lensDropsAmount     = num(p, "lensDropsAmount",   1.0,   0.0, 2.0);
         stormClouds         = bool(p, "stormClouds",      false);
         stormCloudsStrength = num(p, "stormCloudsStrength", 1.0, 0.0, 1.0);
         stormBolts          = bool(p, "stormBolts",       false);
@@ -496,6 +550,9 @@ public final class FxConfig {
         out.put(P + "godRays", godRays);
         out.put(P + "godRayStrength", godRayStrength);
         out.put(P + "godRayLength", godRayLength);
+        out.note("Soft coloured rings across the screen when you look near the sun. Hidden when the sun is.");
+        out.put(P + "lensFlare", lensFlare);
+        out.put(P + "lensFlareStrength", lensFlareStrength);
         out.put(P + "waterRays", waterRays);
         out.put(P + "waterRaysStrength", waterRaysStrength);
         out.note("Rippling sunlight patterns on the seabed, plus fine motes drifting in the water.");
@@ -549,6 +606,14 @@ public final class FxConfig {
         out.put(P + "bloomStrength", bloomStrength);
         out.put(P + "bloomThreshold", bloomThreshold);
         out.put(P + "bloomSpread", bloomSpread);
+
+        out.section("Ambient occlusion");
+        out.note("Soft shade in corners, under overhangs and where things touch the ground.");
+        out.put(P + "ambientOcclusion", ambientOcclusion);
+        out.put(P + "ambientOcclusionStrength", ambientOcclusionStrength);
+        out.note("Things block the sun near you and cast soft shadows on the ground and walls.");
+        out.put(P + "sunShadows", sunShadows);
+        out.put(P + "sunShadowStrength", sunShadowStrength);
 
         out.section("Cloud colour");
         out.note("How far the clouds dim after dark, and how much of the fog colour",
@@ -630,7 +695,8 @@ public final class FxConfig {
                  "and a howling wind. Rate 0 means never, 3 means often.");
         out.put(P + "netherStorms", netherStorms);
         out.put(P + "netherStormRate", netherStormRate);
-        out.note("Lava gets a bright flat mosaic of glowing texels. Off keeps the vanilla lava texture.");
+        out.note("Lava gets glowing crust plates that drift with the flow, break up and re-form between bright breathing cracks.",
+                 "Off keeps the vanilla lava texture.");
         out.put(P + "lavaCrust", lavaCrust);
         out.put(P + "lavaCrustAmount", lavaCrustAmount);
         out.note("How hard the Nether storm hits: fog closeness and how much dust it carries.");
@@ -638,6 +704,8 @@ public final class FxConfig {
         out.note("Hand-drawn lava pops, splats, orbs, ripples and wisps replace the vanilla lava particles.");
         out.put(P + "lavaParticles", lavaParticles);
         out.put(P + "lavaParticlesAmount", lavaParticlesAmount);
+        out.note("Now and then a lava pool near you bursts and throws glowing blobs that arc, trail embers and splat back.");
+        out.put(P + "lavaEruptions", lavaEruptions);
         out.note("Lit Nether portals glow violet, with motes spiralling in. Vanilla portal specks near them are replaced.");
         out.put(P + "netherPortalFx", netherPortalFx);
         out.note("Twigs, pebbles, petals, clover and tiny flowers on the ground, and leaves drifting down from trees.");
@@ -661,6 +729,8 @@ public final class FxConfig {
         out.note("Grass blade look: 0 short tufts, 1 tall meadow ribbons.");
         out.put(P + "grassBladesStyle", grassBladesStyle);
         out.note("Turquoise shallows and lapping foam where water meets the shore.");
+        out.note("Spread the effect updates (shore foam, puddles, litter, lava, birds and the rest) over the frames between game ticks instead of running them all in the tick frame. Same work, smoother frame times.");
+        out.put(P + "spreadFxTicks", spreadFxTicks);
         out.put(P + "shoreFoam", shoreFoam);
         out.put(P + "shoreFoamStrength", shoreFoamStrength);
         out.note("Foam rings trail behind swimmers, mobs and boats moving across water.");
@@ -669,6 +739,9 @@ public final class FxConfig {
         out.note("Rings spread on the water where rain lands and where things splash, in blocky pixel steps.");
         out.put(P + "ripples", ripples);
         out.put(P + "ripplesAmount", ripplesAmount);
+        out.note("Small pixel rings pop up where raindrops land on open water, across all the water you can see. Needs Embeddium.");
+        out.put(P + "rainRings", rainRings);
+        out.put(P + "rainRingsAmount", rainRingsAmount);
         out.note("Waterfalls churn white foam where they land, throw spray and drift soft mist.");
         out.put(P + "waterfallFoam", waterfallFoam);
         out.put(P + "waterfallFoamAmount", waterfallFoamAmount);
@@ -678,12 +751,25 @@ public final class FxConfig {
         out.note("Water picks up the sky's colour, more strongly the flatter you look across it.");
         out.put(P + "skyReflection", skyReflection);
         out.put(P + "skyReflectionStrength", skyReflectionStrength);
+        out.note("Calm water mirrors the trees, hills and sky around it.");
+        out.put(P + "waterReflections", waterReflections);
+        out.put(P + "waterReflectionStrength", waterReflectionStrength);
+        out.note("Fish now and then leap out of lakes and oceans with a splash.");
+        out.put(P + "fishJumps", fishJumps);
+        out.put(P + "fishJumpsAmount", fishJumpsAmount);
         out.note("Blinking fireflies drift over grass on warm, clear nights.");
         out.put(P + "fireflies", fireflies);
         out.put(P + "firefliesAmount", firefliesAmount);
+        out.note("Breath clouds in the cold, and dust, snow or splashes kicked up by footsteps.");
+        out.put(P + "breathPuffs", breathPuffs);
+        out.put(P + "footstepPuffs", footstepPuffs);
+        out.put(P + "footstepPuffsAmount", footstepPuffsAmount);
         out.note("Butterflies flutter around flowers on clear days.");
         out.put(P + "butterflies", butterflies);
         out.put(P + "butterfliesAmount", butterfliesAmount);
+        out.note("Faint pastel wisps of mist float in the open air around you and drift with the wind.");
+        out.put(P + "airMist", airMist);
+        out.put(P + "airMistAmount", airMistAmount);
         out.note("Flocks of birds cross the sky by day, and songbirds burst out of trees as you walk past.");
         out.put(P + "birds", birds);
         out.put(P + "birdsAmount", birdsAmount);
@@ -723,6 +809,16 @@ public final class FxConfig {
                  "wobbling as they climb and popping at the surface.");
         out.put(P + "underwaterBubbles", underwaterBubbles);
         out.put(P + "underwaterBubblesAmount", underwaterBubblesAmount);
+        out.note("Deep water: the further below the surface you are, the darker and closer the water fog gets,",
+                 "and sun rays, caustics and silt fade out by about 24 blocks down. Near the surface nothing changes.");
+        out.put(P + "deepWater", deepWater);
+        out.put(P + "deepWaterDarkness", deepWaterDarkness);
+        out.note("Marine snow: slow pale specks sinking through the water around you, more of them the deeper you go.");
+        out.put(P + "marineSnow", marineSnow);
+        out.put(P + "marineSnowAmount", marineSnowAmount);
+        out.note("Deep sounds: every minute or two, a low distant groan or rumble when you are more than 20 blocks under water.");
+        out.put(P + "deepSounds", deepSounds);
+        out.put(P + "deepSoundsVolume", deepSoundsVolume);
         out.note("Deep dark haze: a cold dark-teal fog in the deep dark and near sculk, with slow teal motes,",
                  "and a gentle pulse when a sculk sensor or shrieker goes off nearby.");
         out.put(P + "deepDarkHaze", deepDarkHaze);
@@ -763,6 +859,9 @@ public final class FxConfig {
                  "with fewer, larger, softer particles and drifting cards, and the storm fog reaches further.");
         out.put(P + "stormRange", stormRange);
         out.put(P + "stormRainAmount", stormRainAmount);
+        out.note("Raindrops land on the screen when you look up into the rain.");
+        out.put(P + "lensDrops", lensDrops);
+        out.put(P + "lensDropsAmount", lensDropsAmount);
         out.note("Storm sky: a dark rolling cloud deck slides in with the rain, lit from inside by",
                  "lightning, with flickers and far rumbles inside the clouds during thunderstorms.");
         out.put(P + "stormClouds", stormClouds);

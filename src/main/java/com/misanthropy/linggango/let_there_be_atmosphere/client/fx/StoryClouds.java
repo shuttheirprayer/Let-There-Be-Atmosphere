@@ -22,6 +22,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterShadersEvent;
@@ -83,7 +84,8 @@ public final class StoryClouds {
                 && StoryCloudConfig.enabled
                 && shader != null
                 && level != null
-                && !Float.isNaN(level.effects().getCloudHeight());
+                && !Float.isNaN(level.effects().getCloudHeight())
+                && CameraFluid.of(Minecraft.getInstance().gameRenderer.getMainCamera()) == FogType.NONE;
     }
 
     public static void invalidate() {

@@ -18,6 +18,7 @@ import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 final class LitterMotion {
@@ -146,17 +147,23 @@ final class LitterMotion {
         }
     }
 
-    private static float surface(int bx, int bz, float fromY, boolean light) {
+    private static float surface(int bx, int bz, float fromY, int type) {
         ClientLevel level = Litter.level;
         water = false;
         int top = Mth.floor(fromY + STEP);
-        for (int yy = top; yy >= top - 7; yy--) {
+        for (int yy = top; yy >= top - (type == STONE ? 24 : 7); yy--) {
             P.set(bx, yy, bz);
             BlockState state = level.getBlockState(P);
             FluidState fluid = state.getFluidState();
             if (!fluid.isEmpty()) {
-                if (!light || !fluid.is(FluidTags.WATER)) return Float.NaN;
+                if (!fluid.is(FluidTags.WATER)) return Float.NaN;
                 water = true;
+                if (type == STONE) {
+                    VoxelShape bed = state.getCollisionShape(level, P);
+                    if (bed.isEmpty()) continue;
+                    float h = yy + (float) bed.max(Direction.Axis.Y);
+                    return h - fromY > STEP ? Float.NaN : h;
+                }
                 float h = yy + fluid.getHeight(level, P);
                 return h - fromY > STEP ? Float.NaN : h;
             }
@@ -177,7 +184,7 @@ final class LitterMotion {
         float vx = VX[i], vz = VZ[i];
         if (vx != 0F) {
             double nx = X[i] + vx;
-            float h = surface(Mth.floor(nx + Math.signum(vx) * r), Mth.floor(Z[i]), y, light);
+            float h = surface(Mth.floor(nx + Math.signum(vx) * r), Mth.floor(Z[i]), y, type);
             if (Float.isNaN(h)) {
                 if (Math.abs(vx) > 0.05F) sound(i, Math.min(1F, Math.abs(vx) * 5F));
                 vx = -vx * 0.22F;
@@ -188,7 +195,7 @@ final class LitterMotion {
         }
         if (vz != 0F) {
             double nz = Z[i] + vz;
-            float h = surface(Mth.floor(X[i]), Mth.floor(nz + Math.signum(vz) * r), y, light);
+            float h = surface(Mth.floor(X[i]), Mth.floor(nz + Math.signum(vz) * r), y, type);
             if (Float.isNaN(h)) {
                 if (Math.abs(vz) > 0.05F) sound(i, Math.min(1F, Math.abs(vz) * 5F));
                 vz = -vz * 0.22F;
@@ -197,12 +204,19 @@ final class LitterMotion {
                 Z[i] = nz;
             }
         }
-        float h = surface(Mth.floor(X[i]), Mth.floor(Z[i]), y, light);
+        float h = surface(Mth.floor(X[i]), Mth.floor(Z[i]), y, type);
         float vy = VY[i];
         if (!Float.isNaN(h)) {
             WET[i] = water;
             FLOOR[i] = h;
+            if (water && type != STONE) {
+                P.set(Mth.floor(X[i]), Mth.floor(h - 0.01F), Mth.floor(Z[i]));
+                Vec3 flow = Litter.level.getFluidState(P).getFlow(Litter.level, P);
+                vx += (float) flow.x * 0.006F;
+                vz += (float) flow.z * 0.006F;
+            }
             if (vy > 0F || y > h + 0.002F) {
+                if (water && type == STONE) vy *= 0.5F;
                 y += vy;
                 vy -= GRAVITY;
                 if (y <= h) {
@@ -225,7 +239,7 @@ final class LitterMotion {
         Y[i] = y;
         VY[i] = vy;
         AIR[i] = vy != 0F || (!Float.isNaN(h) && y > h + 0.002F);
-        float f = WET[i] && light ? 0.94F : FRICTION[type];
+        float f = WET[i] && type != STONE ? 0.94F : FRICTION[type];
         vx *= f;
         vz *= f;
         if (vx * vx + vz * vz < 0.000016F && !AIR[i]) {
@@ -483,10 +497,10 @@ final class LitterMotion {
         EXPOSED[i] = level.canSeeSky(P) && level.getBiome(P).value().getPrecipitationAt(P) == Biome.Precipitation.RAIN;
         if (!EXPOSED[i]) return;
         float y = (float) Y[i];
-        float px = surface(Mth.floor(X[i] + 0.7), Mth.floor(Z[i]), y, true);
-        float mx = surface(Mth.floor(X[i] - 0.7), Mth.floor(Z[i]), y, true);
-        float pz = surface(Mth.floor(X[i]), Mth.floor(Z[i] + 0.7), y, true);
-        float mz = surface(Mth.floor(X[i]), Mth.floor(Z[i] - 0.7), y, true);
+        float px = surface(Mth.floor(X[i] + 0.7), Mth.floor(Z[i]), y, LIGHT);
+        float mx = surface(Mth.floor(X[i] - 0.7), Mth.floor(Z[i]), y, LIGHT);
+        float pz = surface(Mth.floor(X[i]), Mth.floor(Z[i] + 0.7), y, LIGHT);
+        float mz = surface(Mth.floor(X[i]), Mth.floor(Z[i] - 0.7), y, LIGHT);
         SLOPE_X[i] = Float.isNaN(px) || Float.isNaN(mx) ? 0F : Mth.clamp(mx - px, -1F, 1F);
         SLOPE_Z[i] = Float.isNaN(pz) || Float.isNaN(mz) ? 0F : Mth.clamp(mz - pz, -1F, 1F);
     }

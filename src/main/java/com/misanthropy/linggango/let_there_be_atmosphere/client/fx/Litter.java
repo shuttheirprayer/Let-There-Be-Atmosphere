@@ -8,6 +8,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -142,7 +143,7 @@ public final class Litter {
     }
 
     private static boolean leavesOn() {
-        return FxConfig.fallingLeaves && FxConfig.fallingLeavesAmount > 0.0;
+        return BiomeFx.on(FxConfig.fallingLeaves, BiomeFx.FALLING_LEAVES) && BiomeFx.amount(FxConfig.fallingLeavesAmount, BiomeFx.FALLING_LEAVES) > 0.0;
     }
 
     public static void onLitterTick(TickEvent.ClientTickEvent event) {
@@ -544,7 +545,7 @@ public final class Litter {
         float seconds = Wind.seconds(level, 0F);
         float gust = Wind.gust(seconds);
         float force = (0.4F + 1.2F * gust) * (float) FxConfig.windStrength;
-        leafCarry += (0.56F + 1.2F * gust) * (float) FxConfig.fallingLeavesAmount * (1F + level.getRainLevel(1F));
+        leafCarry += (0.56F + 1.2F * gust) * (float) BiomeFx.amount(FxConfig.fallingLeavesAmount, BiomeFx.FALLING_LEAVES) * (1F + level.getRainLevel(1F));
         int tries = 0;
         for (; leafCarry >= 1F && tries < 40; tries++) {
             int x = Mth.floor(player.getX() + (random.nextDouble() * 2.0 - 1.0) * 22.0);
@@ -596,7 +597,7 @@ public final class Litter {
                     sprite == PETAL, random, now);
         }
         if (tries >= 40) leafCarry = Math.min(leafCarry, 4F);
-        if (gust > 0.62F) gustCarry += (gust - 0.62F) * 0.22F * (float) FxConfig.fallingLeavesAmount * (float) FxConfig.windStrength;
+        if (gust > 0.62F) gustCarry += (gust - 0.62F) * 0.22F * (float) BiomeFx.amount(FxConfig.fallingLeavesAmount, BiomeFx.FALLING_LEAVES) * (float) FxConfig.windStrength;
         float angle = Wind.angle(seconds);
         float wx = Mth.cos(angle), wz = Mth.sin(angle);
         for (tries = 0; gustCarry >= 1F && tries < 12; tries++) {

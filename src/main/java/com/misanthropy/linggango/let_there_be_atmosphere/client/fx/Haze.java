@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import java.nio.ByteBuffer;
@@ -54,7 +55,7 @@ public final class Haze {
     private static int noise;
 
     static boolean wanted() {
-        return (FxConfig.heatHaze || FxConfig.coldAir) && (mirage + near + cold > 0.003F
+        return (BiomeFx.on(FxConfig.heatHaze, BiomeFx.HEAT_HAZE) || BiomeFx.on(FxConfig.coldAir, BiomeFx.COLD_AIR)) && (mirage + near + cold > 0.003F
                 || mirageTarget + nearTarget + coldTarget > 0F);
     }
 
@@ -63,7 +64,7 @@ public final class Haze {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
-        if (level == null || player == null || !DynamicFogHandler.active() || (!FxConfig.heatHaze && !FxConfig.coldAir)) {
+        if (level == null || player == null || !DynamicFogHandler.active() || (!BiomeFx.on(FxConfig.heatHaze, BiomeFx.HEAT_HAZE) && !BiomeFx.on(FxConfig.coldAir, BiomeFx.COLD_AIR))) {
             mirageTarget = nearTarget = coldTarget = 0F;
             return;
         }
@@ -76,21 +77,21 @@ public final class Haze {
         float clear = 1F - level.getRainLevel(1F);
         float sunY = Mth.cos(level.getTimeOfDay(1F) * Mth.TWO_PI);
 
-        if (FxConfig.heatHaze) {
+        if (BiomeFx.on(FxConfig.heatHaze, BiomeFx.HEAT_HAZE)) {
             boolean nether = level.dimensionType().ultraWarm();
             float hot = SkyGlow.smooth(1.0F, 2.0F, temperature) * SkyGlow.smooth(0.1F, 0.5F, sunY) * clear * open;
-            mirageTarget = Math.max(hot, nether ? 0.5F : 0F) * (float) FxConfig.heatHazeStrength;
+            mirageTarget = Math.max(hot, nether ? 0.5F : 0F) * (float) BiomeFx.amount(FxConfig.heatHazeStrength, BiomeFx.HEAT_HAZE);
             if (++ticks % 10 == 0) lavaNear = lavaNearness(level, player.blockPosition());
-            nearTarget = Math.max(lavaNear, nether ? 0.3F : 0F) * (float) FxConfig.heatHazeStrength;
+            nearTarget = Math.max(lavaNear, nether ? 0.3F : 0F) * (float) BiomeFx.amount(FxConfig.heatHazeStrength, BiomeFx.HEAT_HAZE);
         } else {
             mirageTarget = nearTarget = 0F;
         }
 
-        if (FxConfig.coldAir) {
+        if (BiomeFx.on(FxConfig.coldAir, BiomeFx.COLD_AIR)) {
             Biome biome = level.getBiome(CURSOR).value();
             boolean snowing = level.isRaining() && biome.getPrecipitationAt(CURSOR) == Biome.Precipitation.SNOW;
             coldTarget = SkyGlow.smooth(0.2F, -0.2F, temperature) * open * (snowing ? 1F : 0.45F)
-                    * (float) FxConfig.coldAirStrength;
+                    * (float) BiomeFx.amount(FxConfig.coldAirStrength, BiomeFx.COLD_AIR);
         } else {
             coldTarget = 0F;
         }

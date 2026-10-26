@@ -5,6 +5,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -20,11 +21,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Vector3f;
 
 @OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = Let_there_be_atmosphere.MODID, value = Dist.CLIENT)
@@ -47,6 +50,7 @@ public final class LavaSurface {
     private static int near;
     private static float open;
     private static float budget;
+    private static float burstIn = 20F;
 
     private static final class Spots {
         final int chunkX, chunkZ;
@@ -75,9 +79,12 @@ public final class LavaSurface {
             known = level;
             open = 0F;
             near = 0;
+            burstIn = 10F + level.random.nextFloat() * 20F;
         }
         float amount = (float) FxConfig.lavaParticlesAmount;
-        if (!LavaFx.takesOver() || amount <= 0F) {
+        boolean pops = LavaFx.takesOver() && amount > 0F;
+        boolean bursts = LavaFx.erupts();
+        if (!pops && !bursts) {
             open = 0F;
             return;
         }
@@ -96,10 +103,17 @@ public final class LavaSurface {
             budget = 0F;
             return;
         }
-        float rate = Math.min(CAP, 0.3F + 0.3F * Mth.sqrt(open)) * Math.min(amount, 1.5F);
-        budget += rate / 20F;
         RandomSource random = level.random;
         float heat = Mth.clamp(open / FULL, 0F, 1F);
+        if (bursts && open >= 6F && (burstIn -= 0.05F) <= 0F) {
+            burstIn = burst(mc, level, random) ? (20F + 40F * random.nextFloat()) / (0.4F + 0.6F * heat) : 3F + 6F * random.nextFloat();
+        }
+        if (!pops) {
+            budget = 0F;
+            return;
+        }
+        float rate = Math.min(CAP, 0.3F + 0.3F * Mth.sqrt(open)) * Math.min(amount, 1.5F);
+        budget += rate / 20F;
         int spawned = 0;
         for (; budget >= 1F; budget -= 1F) {
             if (erupt(level, random, heat)) spawned++;
@@ -157,22 +171,46 @@ public final class LavaSurface {
         }
     }
 
-    private static boolean erupt(ClientLevel level, RandomSource random, float heat) {
+    private static double pick(ClientLevel level, RandomSource random) {
         float pick = random.nextFloat() * open;
         int chosen = 0;
         while (chosen < near - 1 && CUMULATIVE[chosen] < pick) chosen++;
         Spots spots = NEAR[chosen];
         int spot = spots.spots[random.nextInt(Math.min(spots.count, KEEP))];
-        int x = (spots.chunkX << 4) + (spot & 15);
-        int z = (spots.chunkZ << 4) + ((spot >> 4) & 15);
-        int y = level.getMinBuildHeight() + (spot >> 8);
-        CURSOR.set(x, y, z);
+        CURSOR.set((spots.chunkX << 4) + (spot & 15), level.getMinBuildHeight() + (spot >> 8), (spots.chunkZ << 4) + ((spot >> 4) & 15));
         FluidState fluid = level.getFluidState(CURSOR);
-        if (fluid.isEmpty() || !fluid.is(FluidTags.LAVA) || !level.getBlockState(CURSOR.above()).isAir()) return false;
-        double surface = y + fluid.getHeight(level, CURSOR);
-        double ex = x + 0.15 + random.nextDouble() * 0.7, ez = z + 0.15 + random.nextDouble() * 0.7;
-        int tone = NetherAir.here(level) && NetherAir.lookAt(level, ex, surface, ez) == NetherAir.CRIMSON ? 1 : 0;
-        boolean pop = NetherFx.erupt(random, ex, surface, ez, tone, heat);
+        if (fluid.isEmpty() || !fluid.is(FluidTags.LAVA) || !level.getBlockState(CURSOR.above()).isAir()) return Double.NaN;
+        return CURSOR.getY() + fluid.getHeight(level, CURSOR);
+    }
+
+    private static int tone(ClientLevel level, double x, double y, double z) {
+        return NetherAir.here(level) && NetherAir.lookAt(level, x, y, z) == NetherAir.CRIMSON ? 1 : 0;
+    }
+
+    private static boolean burst(Minecraft mc, ClientLevel level, RandomSource random) {
+        Camera camera = mc.gameRenderer.getMainCamera();
+        Vec3 eye = camera.getPosition();
+        Vector3f look = camera.getLookVector();
+        for (int tries = 0; tries < 8; tries++) {
+            double surface = pick(level, random);
+            if (Double.isNaN(surface)) continue;
+            double x = CURSOR.getX() + 0.5, z = CURSOR.getZ() + 0.5;
+            double dx = x - eye.x, dy = surface - eye.y, dz = z - eye.z;
+            double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (distance < 5.0 || distance > 40.0 || dx * look.x() + dy * look.y() + dz * look.z() < 0.6 * distance) continue;
+            NetherFx.burst(random, x, surface, z, tone(level, x, surface, z));
+            level.playLocalSound(x, surface, z, SoundEvents.LAVA_POP, SoundSource.BLOCKS, 1.6F, 0.45F + 0.15F * random.nextFloat(), false);
+            if (Diagnostics.detail()) Diagnostics.mark(Diagnostics.LAVA_FX, String.format("lava burst %.0f blocks away", distance));
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean erupt(ClientLevel level, RandomSource random, float heat) {
+        double surface = pick(level, random);
+        if (Double.isNaN(surface)) return false;
+        double ex = CURSOR.getX() + 0.15 + random.nextDouble() * 0.7, ez = CURSOR.getZ() + 0.15 + random.nextDouble() * 0.7;
+        boolean pop = NetherFx.erupt(random, ex, surface, ez, tone(level, ex, surface, ez), heat);
         if (pop && random.nextInt(4) == 0) {
             level.playLocalSound(ex, surface, ez, SoundEvents.LAVA_POP, SoundSource.BLOCKS, 0.12F + 0.1F * random.nextFloat(),
                     0.7F + random.nextFloat() * 0.5F, false);

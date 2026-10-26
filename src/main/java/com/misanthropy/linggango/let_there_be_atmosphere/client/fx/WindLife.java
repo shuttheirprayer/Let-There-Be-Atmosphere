@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -37,7 +38,7 @@ public final class WindLife {
             Wind.idle();
             Diagnostics.skip(Diagnostics.WIND, FxConfig.livingWind ? "no sky or master off" : "classic wind");
         }
-        WindParticles.update(level, seconds, player.getEyeY(), sky && FxConfig.windParticles && FxConfig.windParticleStrength > 0.0);
+        WindParticles.update(level, seconds, player.getEyeY(), sky && BiomeFx.on(FxConfig.windParticles, BiomeFx.WIND_PARTICLES) && BiomeFx.amount(FxConfig.windParticleStrength, BiomeFx.WIND_PARTICLES) > 0.0);
         if (sky) {
             WindBits.tick(level, player, seconds);
             WindSound.tick(level, player, seconds);

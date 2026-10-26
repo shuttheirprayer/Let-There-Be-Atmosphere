@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -82,7 +83,7 @@ public final class Tumbleweeds {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel current = mc.level;
         LocalPlayer player = mc.player;
-        if (current == null || player == null || !FxConfig.tumbleweeds || !DynamicFogHandler.active()
+        if (current == null || player == null || !BiomeFx.on(FxConfig.tumbleweeds, BiomeFx.TUMBLEWEEDS) || !DynamicFogHandler.active()
                 || !current.dimensionType().hasSkyLight()) {
             if (anchored) reset();
             Diagnostics.skip(Diagnostics.TUMBLEWEEDS, "disabled, or no sky here");

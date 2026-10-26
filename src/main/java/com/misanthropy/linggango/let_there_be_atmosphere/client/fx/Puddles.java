@@ -57,7 +57,7 @@ public final class Puddles {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
-        boolean any = FxConfig.puddles || FxConfig.rainSplashes || FxConfig.cloudShadows || FxConfig.stormRain || FxConfig.wetSurfaces;
+        boolean any = FxConfig.puddles || FxConfig.rainSplashes || FxConfig.cloudShadows || FxConfig.stormRain || FxConfig.wetSurfaces || FxConfig.sunShadows;
         if (level == null || player == null || !any || !DynamicFogHandler.active()
                 || !level.dimensionType().hasSkyLight() || level.effects().skyType() != DimensionSpecialEffects.SkyType.NORMAL) {
             wetness = raining = damp = 0F;

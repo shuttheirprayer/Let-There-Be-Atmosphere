@@ -956,44 +956,27 @@ public class DynamicFogHandler {
         int h = mc.getWindow().getGuiScaledHeight();
         if (w <= 0 || h <= 0) return;
 
-        drawHorizonHaze(mc, event, camera, w, h, vis);
         drawWeatherTint(mc, event, w, h, vis);
     }
 
-    private static void drawHorizonHaze(@NonNull Minecraft mc, RenderGuiEvent.@NonNull Pre event,
-                                        @NonNull Camera camera, int w, int h, float vis) {
-        if (FxConfig.hazeBandEnabled) return;
-        if (!hazeOverlayEnabled || hazeOverlayStrength <= 0.0) return;
-
-        float  pitch    = Mth.clamp(camera.getXRot(), -85f, 85f);
-        double fovDeg   = mc.options.fov().get();
-        double aspect   = (double) Math.max(1, mc.getWindow().getWidth()) / Math.max(1, mc.getWindow().getHeight());
-        double fovVRad  = 2.0 * Math.atan(Math.tan(Math.toRadians(fovDeg) * 0.5) / aspect);
-        double tanHalfV = Math.max(1e-4, Math.tan(fovVRad * 0.5));
-        double horizon  = h * 0.5 * (1.0 + Math.tan(Math.toRadians(pitch)) / tanHalfV);
-
-        float onScreen = 1f - Mth.clamp((float) (Math.abs(horizon - h * 0.5) / (h * 0.75)), 0f, 1f);
-        if (onScreen <= 0.001f) return;
-
-        int cr = (int) (Mth.clamp(currentR < 0 ? sampledSkyR : currentR, 0f, 1f) * 255f);
-        int cg = (int) (Mth.clamp(currentG < 0 ? sampledSkyG : currentG, 0f, 1f) * 255f);
-        int cb = (int) (Mth.clamp(currentB < 0 ? sampledSkyB : currentB, 0f, 1f) * 255f);
-        int rgb = (cr << 16) | (cg << 8) | cb;
-
-        float rain = mc.level.getRainLevel((float) event.getPartialTick());
-        int peak = (int) (Mth.clamp((float) hazeOverlayStrength, 0f, 1f)
-                * vis * onScreen * (0.6f + rain * 0.4f) * 150f);
-        if (peak <= 1) return;
-        peak = Math.min(peak, 200);
-
-        int band = Math.max(24, (int) (h * 0.42f));
-        int mid  = (int) horizon;
-        int transparent = rgb;
-        int solid       = (peak << 24) | rgb;
-
-        GuiGraphics g = event.getGuiGraphics();
-        g.fillGradient(RenderType.guiOverlay(), 0, mid - band, w, mid, transparent, solid, 0);
-        g.fillGradient(RenderType.guiOverlay(), 0, mid, w, mid + band, solid, transparent, 0);
+    public static float horizonGlow(float partialTick, float @NonNull [] rgb) {
+        Minecraft mc = Minecraft.getInstance();
+        if (FxConfig.hazeBandEnabled || !hazeOverlayEnabled || hazeOverlayStrength <= 0.0) return 0f;
+        if (!active() || !dynamicFogEnabled || mc.level == null || mc.player == null) return 0f;
+        if (!mc.level.dimensionType().hasSkyLight()) return 0f;
+        if (mc.player.isSpectator()
+                || mc.player.hasEffect(MobEffects.BLINDNESS)
+                || mc.player.hasEffect(MobEffects.DARKNESS)
+                || mc.player.hasEffect(MobEffects.NIGHT_VISION)) return 0f;
+        if (CameraFluid.of(mc.gameRenderer.getMainCamera()) != FogType.NONE) return 0f;
+        float vis = sampledSkyVisibility;
+        if (vis <= 0.03f) return 0f;
+        rgb[0] = Mth.clamp(currentR < 0 ? sampledSkyR : currentR, 0f, 1f);
+        rgb[1] = Mth.clamp(currentG < 0 ? sampledSkyG : currentG, 0f, 1f);
+        rgb[2] = Mth.clamp(currentB < 0 ? sampledSkyB : currentB, 0f, 1f);
+        float rain = mc.level.getRainLevel(partialTick);
+        float day = Mth.clamp((mc.level.getSkyDarken(partialTick) - 0.2f) / 0.8f, 0f, 1f);
+        return Mth.clamp((float) hazeOverlayStrength, 0f, 1f) * vis * day * day * (0.6f + rain * 0.4f) * (150f / 255f);
     }
 
     private static void drawWeatherTint(@NonNull Minecraft mc, RenderGuiEvent.@NonNull Pre event,

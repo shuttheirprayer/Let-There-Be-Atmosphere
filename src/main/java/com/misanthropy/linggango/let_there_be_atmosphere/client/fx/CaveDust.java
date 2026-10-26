@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -60,7 +61,7 @@ public final class CaveDust {
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null || mc.isPaused()) return;
-        if ((!FxConfig.caveDust && !FxConfig.caveSparkle) || !DynamicFogHandler.active()
+        if ((!BiomeFx.on(FxConfig.caveDust, BiomeFx.CAVE_DUST) && !BiomeFx.on(FxConfig.caveSparkle, BiomeFx.CAVE_SPARKLE)) || !DynamicFogHandler.active()
                 || !level.dimensionType().hasSkyLight()) {
             Diagnostics.skip(Diagnostics.CAVE, "disabled or no sky in this dimension");
             gems = sculk = 0;
@@ -74,7 +75,7 @@ public final class CaveDust {
         cave += (target - cave) * 0.05F;
 
         ticks++;
-        if (FxConfig.caveSparkle && scanIndex < 0 && (ticks - scannedAt >= 200 || scannedFrom == Long.MIN_VALUE
+        if (BiomeFx.on(FxConfig.caveSparkle, BiomeFx.CAVE_SPARKLE) && scanIndex < 0 && (ticks - scannedAt >= 200 || scannedFrom == Long.MIN_VALUE
                 || BlockPos.of(scannedFrom).distManhattan(eye) >= 4)) {
             startScan(level, eye);
             scannedAt = ticks;
@@ -84,8 +85,8 @@ public final class CaveDust {
         RandomSource random = level.random;
         int spawned = 0;
 
-        if (FxConfig.caveDust && cave > 0.05F) {
-            carry += cave * 1.6F * (float) FxConfig.caveDustAmount;
+        if (BiomeFx.on(FxConfig.caveDust, BiomeFx.CAVE_DUST) && cave > 0.05F) {
+            carry += cave * 1.6F * (float) BiomeFx.amount(FxConfig.caveDustAmount, BiomeFx.CAVE_DUST);
             for (; carry >= 1F; carry -= 1F) {
                 double x = player.getX() + (random.nextDouble() * 2.0 - 1.0) * DUST_RADIUS;
                 double y = player.getEyeY() + (random.nextDouble() * 2.0 - 1.0) * DUST_RADIUS * 0.6;
@@ -98,8 +99,8 @@ public final class CaveDust {
             }
         }
 
-        if (FxConfig.caveSparkle) {
-            float amount = (float) FxConfig.caveDustAmount;
+        if (BiomeFx.on(FxConfig.caveSparkle, BiomeFx.CAVE_SPARKLE)) {
+            float amount = (float) BiomeFx.amount(FxConfig.caveDustAmount, BiomeFx.CAVE_SPARKLE);
             if (gems > 0 && random.nextFloat() < 0.8F * amount) spawned += glint(mc, level, random);
             if (gems > 8 && random.nextFloat() < 0.6F * amount) spawned += glint(mc, level, random);
             if (sculk > 0 && random.nextFloat() < 0.5F * amount) spawned += spore(mc, level, random);

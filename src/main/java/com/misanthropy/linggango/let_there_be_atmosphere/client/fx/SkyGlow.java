@@ -7,6 +7,9 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.resources.ResourceLocation;
@@ -62,7 +65,7 @@ public final class SkyGlow {
         if (level == null) return;
 
         float partialTick = event.getPartialTick();
-        float clear = (1F - level.getRainLevel(partialTick)) * DynamicFogHandler.skyVisibility();
+        float clear = (1F - level.getRainLevel(partialTick)) * open(level, event.getCamera().getPosition());
         if (clear < VISIBLE) {
             Diagnostics.skip(Diagnostics.GLOW, "the sky is covered");
             return;
@@ -228,6 +231,10 @@ public final class SkyGlow {
             return false;
         }
         return CameraFluid.of(mc.gameRenderer.getMainCamera()) == FogType.NONE;
+    }
+
+    static float open(ClientLevel level, Vec3 eye) {
+        return Math.max(DynamicFogHandler.skyVisibility(), smooth(4F, 12F, level.getBrightness(LightLayer.SKY, BlockPos.containing(eye))));
     }
 
     static float smooth(float edge0, float edge1, float x) {

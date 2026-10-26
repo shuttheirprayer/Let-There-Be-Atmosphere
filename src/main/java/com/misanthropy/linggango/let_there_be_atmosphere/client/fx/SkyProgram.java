@@ -35,7 +35,7 @@ public final class SkyProgram {
     static final SkyProgram GLOW = new SkyProgram("sky_glow", new String[]{"Sampler0"}, "Transform", "Center", "Size", "Tint", "Mode", "AxisU", "AxisV");
     static final SkyProgram RAINBOW = new SkyProgram("sky_rainbow", new String[0], "Transform", "Sun");
     static final SkyProgram SUN_MASK = new SkyProgram("sun_mask", new String[]{"DepthSampler", "CloudSampler", "NoiseSampler", "HeightSampler", "CoverSampler"},
-            "InverseTransform", "Cloud", "Sun", "Ray", "Mist", "MistDrift", "Ground", "GroundOrigin", "Puddle", "HeightCenter", "CloudGrid", "Cover", "Wet");
+            "InverseTransform", "Cloud", "Sun", "Ray", "Mist", "MistDrift", "Ground", "GroundOrigin", "Puddle", "HeightCenter", "CloudGrid", "Cover", "Wet", "Occlusion", "ViewProjection", "SunShadow");
     static final SkyProgram CAVE_MOTES = new SkyProgram("cave_motes", new String[]{"Sampler0", "Sampler1", "DataSampler"},
             "Transform", "Right", "Up", "Offset", "Clock", "MoteFog", "Sprites");
     static final SkyProgram LITTER = new SkyProgram("litter", new String[]{"Sampler0", "Sampler1", "DataSampler"},
@@ -50,6 +50,12 @@ public final class SkyProgram {
             "Transform", "Right", "Up", "Offset", "Clock", "BitFog");
     static final SkyProgram BUTTERFLY = new SkyProgram("butterfly", new String[]{"Sampler0", "Sampler1", "DataSampler"},
             "Transform", "Offset", "Clock", "BugFog");
+    static final SkyProgram FISH = new SkyProgram("fish", new String[]{"Sampler0", "Sampler1", "DataSampler"},
+            "Transform", "Offset", "Clock", "FishFog");
+    static final SkyProgram AIR_MIST = new SkyProgram("air_mist", new String[]{"Sampler0"},
+            "Transform", "Right", "Up", "Clock", "MistFog", "Wisps");
+    static final SkyProgram PUFFS = new SkyProgram("puffs", new String[]{"Sampler0"},
+            "Transform", "Right", "Up", "Clock", "PuffFog", "Puffs");
     static final SkyProgram BIRDS = new SkyProgram("birds", new String[]{"Sampler0", "Sampler1", "DataSampler"},
             "Transform", "Offset", "Clock", "BirdFog");
     static final SkyProgram WAKE = new SkyProgram("water_wake", new String[]{"Sampler1", "DataSampler"},
@@ -64,6 +70,11 @@ public final class SkyProgram {
             "Transform", "Offset", "Clock", "Sun", "Screen");
     static final SkyProgram WATER_SHEEN = new SkyProgram("water_sheen", new String[]{"DepthSampler"},
             "InverseTransform", "Surface", "Horizon", "Zenith");
+    static final SkyProgram WATER_REFLECT = new SkyProgram("water_reflect", new String[]{"SceneSampler", "DepthSampler", "SolidSampler", "NoiseSampler", "NearSampler"},
+            "InverseTransform", "ViewProjection", "Surface", "Waves", "Horizon", "Zenith");
+    static final SkyProgram WATER_REFLECT_MIX = new SkyProgram("water_reflect_mix", new String[]{"ReflectSampler", "SceneSampler", "BaseSampler", "DepthSampler", "SolidSampler"},
+            "InverseTransform", "Spread");
+    static final SkyProgram WATER_REFLECT_NEAR = new SkyProgram("water_reflect_near", new String[]{"SolidSampler"});
     static final SkyProgram CAUSTICS = new SkyProgram("water_caustics", new String[]{"DepthSampler", "NoiseSampler"},
             "InverseTransform", "Surface", "Light");
     static final SkyProgram WATER_RAYS = new SkyProgram("water_rays", new String[]{"DepthSampler", "NoiseSampler"},

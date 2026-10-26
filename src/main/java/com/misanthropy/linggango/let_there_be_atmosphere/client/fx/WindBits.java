@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -17,6 +18,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -135,7 +137,7 @@ public final class WindBits {
     }
 
     static void tick(ClientLevel level, LocalPlayer player, float seconds) {
-        boolean bits = FxConfig.windBits && FxConfig.windBitsAmount > 0.0;
+        boolean bits = BiomeFx.on(FxConfig.windBits, BiomeFx.WIND_BITS) && BiomeFx.amount(FxConfig.windBitsAmount, BiomeFx.WIND_BITS) > 0.0;
         boolean streaks = FxConfig.windStreaks;
         if (!bits && !streaks) {
             Diagnostics.skip(Diagnostics.WINDBITS, "disabled");
@@ -154,7 +156,7 @@ public final class WindBits {
         float wx = windX, wz = windZ;
         int before = born;
         if (bits) {
-            budget = Math.min(budget + drive * 1.6F * (float) FxConfig.windBitsAmount, 6F);
+            budget = Math.min(budget + drive * 1.6F * (float) BiomeFx.amount(FxConfig.windBitsAmount, BiomeFx.WIND_BITS), 6F);
             for (int tries = 0; tries < PROBES && budget >= 1F; tries++) {
                 budget -= spawn(level, player, wx, wz) ? 1F : 0.12F;
             }
@@ -182,8 +184,9 @@ public final class WindBits {
             if (level.getBlockState(CURSOR).canOcclude()) return false;
             CURSOR.set(x, y, z);
         }
+        if (!open(level, x, y, z)) return false;
+        CURSOR.set(x, y, z);
         int sky = level.getBrightness(LightLayer.SKY, CURSOR);
-        if (sky < 8) return false;
         int block = level.getBrightness(LightLayer.BLOCK, CURSOR);
         int tint = Minecraft.getInstance().getBlockColors().getColor(state, level, CURSOR, 0);
         if (tint == -1) tint = BiomeColors.getAverageFoliageColor(level, CURSOR);
@@ -205,10 +208,22 @@ public final class WindBits {
         double y = player.getEyeY() + (RANDOM.nextFloat() - 0.3F) * 5.0;
         CURSOR.set(x, y, z);
         if (!level.hasChunkAt(CURSOR) || !level.getBlockState(CURSOR).isAir()) return;
+        if (!open(level, CURSOR.getX(), CURSOR.getY(), CURSOR.getZ())) return;
+        CURSOR.set(x, y, z);
         int sky = level.getBrightness(LightLayer.SKY, CURSOR);
-        if (sky < 9) return;
         int block = level.getBrightness(LightLayer.BLOCK, CURSOR);
         emit(STREAK, x, y, z, 0xEEF6FF, block * 16 + sky, 0.8F + RANDOM.nextFloat() * 0.7F, 1F);
+    }
+
+    private static boolean open(ClientLevel level, int x, int y, int z) {
+        int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        if (top - y > 32) return false;
+        for (int at = y + 1; at < top; at++) {
+            CURSOR.set(x, at, z);
+            BlockState state = level.getBlockState(CURSOR);
+            if (!state.is(BlockTags.LEAVES) && (state.blocksMotion() || !state.getFluidState().isEmpty())) return false;
+        }
+        return true;
     }
 
     private static int shade(int rgb, float k) {
@@ -221,7 +236,7 @@ public final class WindBits {
     public static void onWindBitsStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         if (!anchored || now() - lastBirth > 6F || LightTint.lightmap == null) return;
-        if (!(FxConfig.windBits || FxConfig.windStreaks) || ColorGrade.shaderPackActive()) return;
+        if (!(BiomeFx.on(FxConfig.windBits, BiomeFx.WIND_BITS) || FxConfig.windStreaks) || ColorGrade.shaderPackActive()) return;
         SkyProgram program = SkyProgram.WIND_BITS;
         if (!program.ready()) return;
 

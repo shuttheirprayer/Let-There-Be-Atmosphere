@@ -56,6 +56,7 @@ public final class WaterEdge {
     private static final long[] HELD = new long[GRID * GRID];
     private static final int[] AGE = new int[GRID * GRID];
     private static final int[] USED = new int[GRID * GRID];
+    private static final float[] BORN = new float[GRID * GRID];
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final Matrix4f MATRIX = new Matrix4f();
 
@@ -158,6 +159,7 @@ public final class WaterEdge {
 
     private static void refresh(int slot, int cx, int cz) {
         boolean loaded = level.hasChunk(cx, cz) && level.getLightEngine().lightOnInSection(SectionPos.of(cx, 0, cz));
+        if (loaded && HELD[slot] != key(cx, cz)) BORN[slot] = now();
         HELD[slot] = loaded ? key(cx, cz) : Long.MIN_VALUE;
         AGE[slot] = 0;
         if (loaded) classify(cx, cz);
@@ -246,7 +248,8 @@ public final class WaterEdge {
                     if (PROBE_Y[p] == wy) {
                         dry = PROBE_DRY[p];
                     } else {
-                        dry = !level.getFluidState(CURSOR.set(lx, wy, lz)).is(FluidTags.WATER);
+                        BlockState beside = level.getBlockState(CURSOR.set(lx, wy, lz));
+                        dry = !beside.getFluidState().is(FluidTags.WATER) && !beside.isAir();
                         PROBE_Y[p] = wy;
                         PROBE_DRY[p] = dry;
                     }
@@ -260,6 +263,7 @@ public final class WaterEdge {
                 ROW[0][o + 3] = LIGHT[i] + 1;
                 ROW[1][o] = land & 0x1FFF;
                 ROW[1][o + 1] = land >>> 13;
+                ROW[1][o + 2] = BORN[s];
             }
         }
         for (float[] row : ROW) java.util.Arrays.fill(row, (first + used) * 4, (first + PER_CHUNK) * 4, 0F);

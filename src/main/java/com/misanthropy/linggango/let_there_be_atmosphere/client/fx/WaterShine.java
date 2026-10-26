@@ -66,6 +66,76 @@ public final class WaterShine {
     private static Vec3 sky = Vec3.ZERO;
     private static long skyTick = Long.MIN_VALUE;
 
+    public static final float[] SHEEN = new float[4];
+    public static final float[] ZENITH = new float[4];
+    public static volatile boolean sheenBound;
+    private static volatile boolean sheenPatched;
+
+    private static final String SHEEN_FUNCTION = """
+
+            in vec4 v_LinggangoSheen;
+            uniform vec4 u_LinggangoSheen;
+            uniform vec4 u_LinggangoSheenZenith;
+
+            vec4 linggango_sheen(vec4 color, vec3 horizon) {
+                if (u_LinggangoSheen.x <= 0.0 || v_LinggangoSheen.w < 0.999 || v_LinggangoSheen.y > -0.05 || color.a > 0.98) return color;
+                vec3 view = normalize(v_LinggangoSheen.xyz);
+                float graze = 1.0 - clamp(-view.y, 0.0, 1.0);
+                float fresnel = graze * graze * graze * graze;
+                vec3 sky = mix(horizon, u_LinggangoSheenZenith.rgb, smoothstep(0.02, 0.45, -view.y));
+                float a = clamp(u_LinggangoSheen.x * (0.06 + 0.64 * fresnel), 0.0, 1.0);
+                float alpha = 1.0 - (1.0 - color.a) * (1.0 - a);
+                return vec4((color.rgb * color.a * (1.0 - a) + sky * a) / max(alpha, 1.0e-4), alpha);
+            }
+            """;
+
+    public static String patchSheenVertex(String source) {
+        if (source.contains("v_LinggangoSheen")) return source;
+        if (!source.contains(RainRings.V_DECL) || !source.contains(RainRings.V_HOOK)) {
+            Diagnostics.once("sky reflection could not find its place in the terrain vertex shader, it stays a screen pass");
+            return source;
+        }
+        return source.replace(RainRings.V_DECL, RainRings.V_DECL + "\nout vec4 v_LinggangoSheen;")
+                .replace(RainRings.V_HOOK, RainRings.V_HOOK
+                        + "\n    v_LinggangoSheen = vec4(position, abs(fract(_vert_position.y) - 0.8884) < 0.004 ? 1.0 : 0.0);");
+    }
+
+    public static String patchSheenFragment(String source) {
+        if (source.contains("linggango_sheen(")) return source;
+        if (!source.contains(RainRings.F_DECL) || !source.contains(RainRings.F_HOOK) || !source.contains("u_FogColor")
+                || !RainRings.vertexReady()) {
+            sheenPatched = false;
+            Diagnostics.once("sky reflection could not find its place in the terrain fragment shader, it stays a screen pass");
+            return source;
+        }
+        sheenPatched = true;
+        Diagnostics.once("sky reflection patched into the terrain shader");
+        return source.replace(RainRings.F_DECL, RainRings.F_DECL + SHEEN_FUNCTION)
+                .replace(RainRings.F_HOOK, "diffuseColor = linggango_sheen(diffuseColor, u_FogColor.rgb);\n    " + RainRings.F_HOOK);
+    }
+
+    private static boolean sheenInShader() {
+        return sheenBound && sheenPatched;
+    }
+
+    public static void updateSheen() {
+        SHEEN[0] = 0F;
+        Minecraft mc = Minecraft.getInstance();
+        ClientLevel world = mc.level;
+        if (world == null || !sheen() || !world.dimensionType().hasSkyLight() || !DynamicFogHandler.active()) return;
+        Camera camera = mc.gameRenderer.getMainCamera();
+        if (CameraFluid.of(camera) != FogType.NONE) return;
+        long tick = world.getGameTime();
+        if (tick != skyTick) {
+            skyTick = tick;
+            sky = world.getSkyColor(camera.getPosition(), mc.getFrameTime());
+        }
+        SHEEN[0] = (float) FxConfig.skyReflectionStrength;
+        ZENITH[0] = (float) sky.x;
+        ZENITH[1] = (float) sky.y;
+        ZENITH[2] = (float) sky.z;
+    }
+
     private static float now() {
         return ((Util.getNanos() - base) / 1.0E9F) % 3600F;
     }
@@ -175,7 +245,8 @@ public final class WaterShine {
         Vec3 eye = camera.getPosition();
         float partialTick = event.getPartialTick();
         float time = now();
-        if (wantSheen && (time - water > 15F || time < water)) Diagnostics.skip(Diagnostics.SHEEN, "no water below you nearby");
+        if (wantSheen && sheenInShader()) Diagnostics.mark(Diagnostics.SHEEN, "drawn in the water shader");
+        else if (wantSheen && (time - water > 15F || time < water)) Diagnostics.skip(Diagnostics.SHEEN, "no water below you nearby");
         else if (wantSheen) drawSheen(event, world, eye, partialTick);
         if (wantSparkles) drawSparkles(event, world, eye, partialTick);
     }

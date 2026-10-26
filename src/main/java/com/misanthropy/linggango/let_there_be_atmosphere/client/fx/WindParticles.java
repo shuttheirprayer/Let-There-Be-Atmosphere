@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import java.util.Locale;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -56,7 +57,7 @@ public final class WindParticles {
             Diagnostics.skip(Diagnostics.WINDPUSH, "disabled");
             return;
         }
-        float force = Wind.level(seconds) * Wind.altitude(eyeY) * (float) FxConfig.windParticleStrength * (float) FxConfig.windStrength;
+        float force = Wind.level(seconds) * Wind.altitude(eyeY) * (float) BiomeFx.amount(FxConfig.windParticleStrength, BiomeFx.WIND_PARTICLES) * (float) FxConfig.windStrength;
         pushX += (Wind.x(seconds) * force * DRIFT - pushX) * 0.2F;
         pushZ += (Wind.z(seconds) * force * DRIFT - pushZ) * 0.2F;
         active = force > 0.02F;

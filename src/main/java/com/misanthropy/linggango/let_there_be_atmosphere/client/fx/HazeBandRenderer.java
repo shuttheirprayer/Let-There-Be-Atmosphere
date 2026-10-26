@@ -20,8 +20,13 @@ import org.lwjgl.opengl.GL20;
 public final class HazeBandRenderer {
     private HazeBandRenderer() {}
 
+    private static final float[] GLOW_RGB = new float[3];
+    private static final float GLOW_RADIUS = 160F;
+    private static final float GLOW_SPAN = 0.6F;
+
     public static void onRenderSkyStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        drawHorizonGlow(event);
         if (!DynamicFogHandler.active() || !FxConfig.hazeBandEnabled || FxConfig.hazeBandStrength <= 0.0) {
             Diagnostics.skip(Diagnostics.HAZEBAND, "disabled");
             return;
@@ -72,8 +77,25 @@ public final class HazeBandRenderer {
                 ? String.format("%d segments, strength %.3f", HazeBand.SEGMENTS, strength) : null);
     }
 
+    private static void drawHorizonGlow(RenderLevelStageEvent event) {
+        float peak = DynamicFogHandler.horizonGlow(event.getPartialTick(), GLOW_RGB);
+        if (peak <= 0.004F) return;
+        if (SkyGate.sky(event, Diagnostics.HAZEBAND, false) == null) return;
+        float span = GLOW_RADIUS * GLOW_SPAN;
+        draw(event.getPoseStack().last().pose(), GLOW_RGB[0], GLOW_RGB[1], GLOW_RGB[2], -span, 0F, span, GLOW_RADIUS, 0F, Math.min(peak, 0.8F), 0F);
+    }
+
     private static void draw(Matrix4f matrix, float r, float g, float b, float bottom, float middle, float top,
                              float radius, float strength) {
+        float mid = Mth.clamp(middle, bottom, top);
+        draw(matrix, r, g, b, bottom, mid, top, radius,
+                Mth.clamp(HazeBand.alpha(bottom, bottom, middle, top) * strength, 0F, 1F),
+                Mth.clamp(HazeBand.alpha(mid, bottom, middle, top) * strength, 0F, 1F),
+                Mth.clamp(HazeBand.alpha(top, bottom, middle, top) * strength, 0F, 1F));
+    }
+
+    private static void draw(Matrix4f matrix, float r, float g, float b, float bottom, float mid, float top,
+                             float radius, float low, float peak, float high) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(false);
@@ -81,15 +103,11 @@ public final class HazeBandRenderer {
         FogRenderer.setupNoFog();
         SkyProgram program = SkyProgram.HAZE;
         if (program.ready()) {
-            float mid = Mth.clamp(middle, bottom, top);
             program.begin();
             program.transform(0, matrix);
             GL20.glUniform4f(program.uniform(1), bottom, mid, top, radius);
-            GL20.glUniform3f(program.uniform(2),
-                    Mth.clamp(HazeBand.alpha(bottom, bottom, middle, top) * strength, 0F, 1F),
-                    Mth.clamp(HazeBand.alpha(mid, bottom, middle, top) * strength, 0F, 1F),
-                    Mth.clamp(HazeBand.alpha(top, bottom, middle, top) * strength, 0F, 1F));
-            GL20.glUniform3f(program.uniform(3), quantize(r), quantize(g), quantize(b));
+            GL20.glUniform3f(program.uniform(2), low, peak, high);
+            GL20.glUniform3f(program.uniform(3), r, g, b);
             program.draw(2 * HazeBand.SEGMENTS * 6);
             program.end();
         }
@@ -99,7 +117,4 @@ public final class HazeBandRenderer {
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }
 
-    private static float quantize(float value) {
-        return (int) (value * 255F) / 255F;
-    }
 }

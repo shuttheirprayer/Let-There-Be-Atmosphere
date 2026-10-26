@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -25,7 +26,7 @@ public final class ViewCapture {
     public static void onRenderViewCaptureStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
         fresh = FxConfig.cloudShadows || FxConfig.godRays || FxConfig.heatHaze || FxConfig.coldAir || FxConfig.groundMist || FxConfig.waterRays
-                || FxConfig.netherRays || FxConfig.netherMist || FxConfig.netherStorms || FxConfig.lavaCrust;
+                || FxConfig.ambientOcclusion || FxConfig.lensFlare || FxConfig.sunShadows || FxConfig.waterReflections || FxConfig.netherRays || FxConfig.netherMist || FxConfig.netherStorms || FxConfig.lavaCrust || BiomeFx.forcesOn();
         if (!fresh) return;
         PROJECTION.set(event.getProjectionMatrix());
         VIEW_PROJECTION.set(PROJECTION).mul(event.getPoseStack().last().pose());

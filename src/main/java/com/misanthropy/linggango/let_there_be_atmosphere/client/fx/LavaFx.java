@@ -19,6 +19,10 @@ public final class LavaFx {
         return FxConfig.lavaParticles && DynamicFogHandler.active() && !ColorGrade.shaderPackActive() && SkyProgram.NETHER_FX.ready();
     }
 
+    static boolean erupts() {
+        return FxConfig.lavaEruptions && DynamicFogHandler.active() && !ColorGrade.shaderPackActive() && SkyProgram.NETHER_FX.ready();
+    }
+
     @OnlyIn(Dist.CLIENT)
     @Mod.EventBusSubscriber(modid = Let_there_be_atmosphere.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class LavaProviders {

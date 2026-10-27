@@ -227,8 +227,8 @@ public final class TorchFlicker {
         }
         FLAMES.flip();
         STATE[0] = picked;
-        STATE[1] = 0.45F;
-        STATE[2] = 0.25F;
+        STATE[1] = 0.6F;
+        STATE[2] = 0.32F;
         Diagnostics.mark(Diagnostics.TORCH_FLICKER, Diagnostics.detail() ? picked + " flames" : null);
     }
 

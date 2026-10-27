@@ -10,6 +10,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AuroraRendere
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Birds;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Bubbles;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Butterflies;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CaveDrips;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CaveDust;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CaveMotes;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.CometRenderer;
@@ -191,7 +192,8 @@ public final class StageDispatch {
             AmbientParticles::onClientTick,
             AirMist::onAirMistTick,
             Puffs::onPuffsTick,
-            FishJumps::onFishJumpsTick
+            FishJumps::onFishJumpsTick,
+            CaveDrips::onCaveDripsTick
     );
 
     private static final long FX_TICK_BUDGET_NANOS = 150_000L;

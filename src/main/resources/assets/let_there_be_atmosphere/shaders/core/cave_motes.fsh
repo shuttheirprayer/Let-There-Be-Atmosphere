@@ -86,9 +86,31 @@ vec4 endMote(int look) {
     return vec4(tone, level > 0.0 ? vertexColor.a * (level > 0.35 ? 1.0 : 0.55) : 0.0);
 }
 
+vec4 drip(int look) {
+    vec3 water = vertexColor.rgb;
+    vec3 hi = mix(water, vec3(1.0), 0.7);
+    float a = vertexColor.a;
+    if (look == 40) {
+        if (texCoord.x < 0.5) return vec4(hi, a);
+        vec2 c = floor((spot.xy * 0.5 + 0.5) * 1.999);
+        return vec4(c.x < 0.5 && c.y > 0.5 ? hi : water, a * (c.x > 0.5 && c.y < 0.5 ? 0.75 : 1.0));
+    }
+    if (look == 41) {
+        return spot.y > 0.0 ? vec4(water, a * 0.7) : vec4(hi, a);
+    }
+    vec2 c = floor((spot.xy * 0.5 + 0.5) * vec2(4.999, 1.999));
+    float dx = abs(c.x - 2.0);
+    float u = texCoord.x;
+    bool low = c.y < 0.5;
+    bool on = u < 0.34 ? low && dx < 1.5 : u < 0.67 ? (low && dx > 1.5) || (!low && dx > 0.5 && dx < 1.5) : !low && dx > 1.5;
+    return on ? vec4(low ? water : hi, a) : vec4(0.0);
+}
+
 void main() {
     vec4 color;
-    if (spot.z > 19.5 && spot.z < 23.5) {
+    if (spot.z > 39.5) {
+        color = drip(int(spot.z + 0.5));
+    } else if (spot.z > 19.5 && spot.z < 23.5) {
         color = nether(int(spot.z + 0.5));
     } else if (spot.z > 27.5 && spot.z < 36.5) {
         color = endMote(int(spot.z + 0.5));

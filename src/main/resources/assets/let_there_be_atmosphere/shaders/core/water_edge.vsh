@@ -13,6 +13,7 @@ out float fogDistance;
 out float fade;
 flat out ivec2 land;
 flat out vec2 origin;
+flat out int stream;
 
 void main() {
     int slot = gl_VertexID / 6;
@@ -27,6 +28,7 @@ void main() {
         fade = 0.0;
         land = ivec2(0);
         origin = vec2(0.0);
+        stream = 0;
         return;
     }
     vec4 b = texelFetch(DataSampler, ivec2(slot, 1), 0);
@@ -36,6 +38,7 @@ void main() {
     world = xz + Origin.xy;
     origin = a.xz + Origin.xy;
     land = ivec2(b.xy + 0.5);
+    stream = int(b.w + 0.5);
     int packed = int(a.w - 0.5);
     int block = packed / 16;
     lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;

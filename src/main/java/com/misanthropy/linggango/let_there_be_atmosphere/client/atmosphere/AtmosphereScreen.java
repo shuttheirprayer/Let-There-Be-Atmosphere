@@ -147,7 +147,7 @@ public class AtmosphereScreen extends Screen {
              "FxConfig.blizzard", "FxConfig.blizzardStrength", "FxConfig.sandstorm", "FxConfig.sandstormStrength",
              "FxConfig.stormRange"},
 
-            {"FxConfig.lightTintEnabled", "FxConfig.blockLightHex", "FxConfig.blockLightStrength",
+            {"FxConfig.lightTintEnabled", "FxConfig.blockLightHex", "FxConfig.blockLightStrength", "FxConfig.torchFlicker",
              "FxConfig.skyLightNightHex", "FxConfig.skyLightStrength",
              "FxConfig.sunLightTint", "FxConfig.sunLightHex", "FxConfig.sunLightStrength",
              "FxConfig.gradeEnabled", "FxConfig.gradeSaturation", "FxConfig.gradeVibrance", "FxConfig.gradeContrast",
@@ -1000,6 +1000,8 @@ public class AtmosphereScreen extends Screen {
                 "The colour of light from torches, lanterns and lava.");
         slider("Torchlight Strength", (float) FxConfig.blockLightStrength, 0f, 1f, 0, "%",
                 v -> FxConfig.blockLightStrength = v, "How much of that colour shows.");
+        toggle("Torch Flicker", () -> FxConfig.torchFlicker, v -> FxConfig.torchFlicker = v,
+                "Light around torches, lanterns, campfires and candles softly wavers, each flame on its own rhythm. Needs Embeddium.");
         color("Moonlight Colour", () -> FxConfig.skyLightNightHex, v -> FxConfig.skyLightNightHex = v, false, 0x7A7AFF,
                 "The colour of light from the night sky.");
         slider("Moonlight Strength", (float) FxConfig.skyLightStrength, 0f, 1f, 0, "%",

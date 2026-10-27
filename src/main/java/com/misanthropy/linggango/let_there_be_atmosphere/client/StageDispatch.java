@@ -39,6 +39,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Ripples;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Silt;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SkyGlow;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SkyHeights;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.TorchFlicker;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.StarSky;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.StormRain;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.StormSky;
@@ -191,7 +192,8 @@ public final class StageDispatch {
             AmbientParticles::onClientTick,
             AirMist::onAirMistTick,
             Puffs::onPuffsTick,
-            FishJumps::onFishJumpsTick
+            FishJumps::onFishJumpsTick,
+            TorchFlicker::onTorchFlickerTick
     );
 
     private static final long FX_TICK_BUDGET_NANOS = 150_000L;

@@ -18,6 +18,7 @@ public final class FxConfig {
     public static int     snowTintHex         = 0xD8E4F0;
 
     public static boolean lightTintEnabled   = true;
+    public static boolean torchFlicker       = true;
     public static int     blockLightHex      = 0xFFD8AC;
     public static double  blockLightStrength = 0.55;
     public static int     skyLightNightHex   = 0x7A7AFF;
@@ -259,6 +260,7 @@ public final class FxConfig {
         rainTintHex         = hex(p, "rainTintHex",   0x8AA8CC);
         snowTintHex         = hex(p, "snowTintHex",   0xD8E4F0);
         lightTintEnabled    = bool(p, "lightTint",    true);
+        torchFlicker        = bool(p, "torchFlicker", true);
         blockLightHex       = hex(p, "blockLightHex", 0xFFD8AC);
         blockLightStrength  = num(p, "blockLightStrength", 0.55, 0.0, 1.0);
         skyLightNightHex    = hex(p, "skyLightNightHex",   0x7A7AFF);
@@ -489,6 +491,8 @@ public final class FxConfig {
         out.section("Coloured light");
         out.note("Warm light from torches and lava, cold light from the sky after dark.");
         out.put(P + "lightTint", lightTintEnabled);
+        out.note("Light around each flame softly breathes, every torch on its own rhythm. Needs Embeddium.");
+        out.put(P + "torchFlicker", torchFlicker);
         out.note("Colour of block light, and how far to push it.");
         out.putHex(P + "blockLightHex", blockLightHex);
         out.put(P + "blockLightStrength", blockLightStrength);

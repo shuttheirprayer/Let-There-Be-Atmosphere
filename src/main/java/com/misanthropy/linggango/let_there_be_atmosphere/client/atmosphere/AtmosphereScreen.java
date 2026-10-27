@@ -144,7 +144,7 @@ public class AtmosphereScreen extends Screen {
 
             {"FxConfig.stormRain", "FxConfig.stormRainAmount", "FxConfig.lensDrops", "FxConfig.lensDropsAmount", "FxConfig.stormClouds", "FxConfig.stormCloudsStrength",
              "FxConfig.stormBolts", "FxConfig.wetSurfaces", "FxConfig.wetSurfacesStrength", "FxConfig.stormWind",
-             "FxConfig.blizzard", "FxConfig.blizzardStrength", "FxConfig.sandstorm", "FxConfig.sandstormStrength",
+             "FxConfig.blizzard", "FxConfig.blizzardStrength", "FxConfig.screenFrost", "FxConfig.sandstorm", "FxConfig.sandstormStrength",
              "FxConfig.stormRange"},
 
             {"FxConfig.lightTintEnabled", "FxConfig.blockLightHex", "FxConfig.blockLightStrength",
@@ -175,7 +175,7 @@ public class AtmosphereScreen extends Screen {
              "FxConfig.breathPuffs", "FxConfig.footstepPuffs", "FxConfig.footstepPuffsAmount"},
 
             {"FxConfig.skyReflection", "FxConfig.skyReflectionStrength", "FxConfig.waterReflections", "FxConfig.waterReflectionStrength",
-             "FxConfig.fishJumps", "FxConfig.fishJumpsAmount", "FxConfig.waterSparkles", "FxConfig.waterSparklesAmount",
+             "FxConfig.fishJumps", "FxConfig.fishJumpsAmount", "FxConfig.wetPlayer", "FxConfig.waterSparkles", "FxConfig.waterSparklesAmount",
              "FxConfig.shoreFoam", "FxConfig.shoreFoamStrength", "FxConfig.waterWake", "FxConfig.waterWakeStrength",
              "FxConfig.ripples", "FxConfig.ripplesAmount", "FxConfig.rainRings", "FxConfig.rainRingsAmount",
              "FxConfig.waterfallFoam", "FxConfig.waterfallFoamAmount",
@@ -985,6 +985,8 @@ public class AtmosphereScreen extends Screen {
                 "Thunderstorms in snowy biomes turn into a whiteout: dense flakes driven sideways, pale fog and a quiet howl.");
         slider("Blizzard Strength", (float) FxConfig.blizzardStrength, 0f, 2f, 2, "x",
                 v -> FxConfig.blizzardStrength = v, "How thick the flakes and the whiteout get.");
+        toggle("Frost", () -> FxConfig.screenFrost, v -> FxConfig.screenFrost = v,
+                "Ice crystals creep in from the screen corners as you freeze in powder snow, and lightly in a blizzard.");
         toggle("Sandstorm", () -> FxConfig.sandstorm, v -> FxConfig.sandstorm = v,
                 "Rain over deserts and other dry, warm biomes becomes a sandstorm: beige fog, streams of sand and drifting dust.");
         slider("Sandstorm Strength", (float) FxConfig.sandstormStrength, 0f, 2f, 2, "x",
@@ -1187,6 +1189,8 @@ public class AtmosphereScreen extends Screen {
                 "Fish now and then leap out of lakes and oceans with a splash.");
         slider("Fish Amount", (float) FxConfig.fishJumpsAmount, 0f, 3f, 2, "x",
                 v -> FxConfig.fishJumpsAmount = v, "How often fish jump.");
+        toggle("Dripping Wet", () -> FxConfig.wetPlayer, v -> FxConfig.wetPlayer = v,
+                "After climbing out of water you drip for a few seconds: drops run down the screen, and fall off your body in third person.");
         toggle("Water Sparkles", () -> FxConfig.waterSparkles, v -> FxConfig.waterSparkles = v,
                 "Pixel sparkles twinkle on moonlit water at night, thickest on the path toward the moon.");
         slider("Sparkle Amount", (float) FxConfig.waterSparklesAmount, 0f, 3f, 2, "x",

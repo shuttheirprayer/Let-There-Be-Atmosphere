@@ -91,9 +91,11 @@ public final class Diagnostics {
     public static final int PUFFS = 64;
     public static final int FISH = 65;
     public static final int BAT_SWARM = 66;
+    public static final int WET_PLAYER = 67;
+    public static final int FROST = 68;
 
     private static final String[] LABELS = {
-            "fog", "clouds", "story", "comets", "hazeband", "lightmap", "mist", "aurora", "glow", "rainbow", "grade", "bloom", "shadows", "rays", "lightning", "haze", "groundmist", "cave", "puddles", "lava", "waterrays", "litter", "sway", "blades", "shore", "wake", "caustics", "fireflies", "butterflies", "stars", "sparkles", "sheen", "birds", "nether", "netherdust", "endsky", "enddust", "portal", "rain", "storm", "ripples", "blizzard", "sandstorm", "tumbleweeds", "endair", "netherstorm", "netherrays", "lavafx", "wind", "windpush", "windbits", "windsound", "rustle", "bubbles", "deepdark", "waterfall", "netherportal", "deepwater", "airmist", "occlusion", "flare", "sunshadows", "reflections", "lensdrops", "puffs", "fish", "batswarm"
+            "fog", "clouds", "story", "comets", "hazeband", "lightmap", "mist", "aurora", "glow", "rainbow", "grade", "bloom", "shadows", "rays", "lightning", "haze", "groundmist", "cave", "puddles", "lava", "waterrays", "litter", "sway", "blades", "shore", "wake", "caustics", "fireflies", "butterflies", "stars", "sparkles", "sheen", "birds", "nether", "netherdust", "endsky", "enddust", "portal", "rain", "storm", "ripples", "blizzard", "sandstorm", "tumbleweeds", "endair", "netherstorm", "netherrays", "lavafx", "wind", "windpush", "windbits", "windsound", "rustle", "bubbles", "deepdark", "waterfall", "netherportal", "deepwater", "airmist", "occlusion", "flare", "sunshadows", "reflections", "lensdrops", "puffs", "fish", "batswarm", "wetplayer", "frost"
     };
 
     private static final String[] COMPAT = {"embeddium", "rubidium", "sodium", "oculus", "iris", "optifine"};

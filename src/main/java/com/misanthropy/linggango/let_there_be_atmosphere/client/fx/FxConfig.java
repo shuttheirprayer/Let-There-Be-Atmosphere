@@ -175,6 +175,7 @@ public final class FxConfig {
     public static double  waterReflectionStrength = 0.8;
     public static boolean fishJumps               = true;
     public static double  fishJumpsAmount         = 1.0;
+    public static boolean wetPlayer               = true;
     public static boolean fireflies            = true;
     public static double  firefliesAmount      = 1.0;
     public static boolean breathPuffs          = true;
@@ -244,6 +245,7 @@ public final class FxConfig {
     public static boolean stormWind            = false;
     public static boolean blizzard             = false;
     public static double  blizzardStrength     = 1.0;
+    public static boolean screenFrost          = true;
     public static boolean sandstorm            = false;
     public static double  sandstormStrength    = 1.0;
 
@@ -396,6 +398,7 @@ public final class FxConfig {
         waterReflectionStrength = num(p, "waterReflectionStrength", 0.8, 0.0, 2.0);
         fishJumps           = bool(p, "fishJumps",        true);
         fishJumpsAmount     = num(p, "fishJumpsAmount",   1.0,   0.0, 3.0);
+        wetPlayer           = bool(p, "wetPlayer",        true);
         fireflies           = bool(p, "fireflies",        true);
         firefliesAmount     = num(p, "firefliesAmount",   1.0,   0.0, 3.0);
         breathPuffs         = bool(p, "breathPuffs",      true);
@@ -464,6 +467,7 @@ public final class FxConfig {
         stormWind           = bool(p, "stormWind",        false);
         blizzard            = bool(p, "blizzard",         false);
         blizzardStrength    = num(p, "blizzardStrength",  1.0,   0.0, 2.0);
+        screenFrost         = bool(p, "screenFrost",      true);
         sandstorm           = bool(p, "sandstorm",        false);
         sandstormStrength   = num(p, "sandstormStrength", 1.0,   0.0, 2.0);
         biomeOverlay        = bool(p, "biomeOverlay",     false);
@@ -759,6 +763,9 @@ public final class FxConfig {
         out.note("Fish now and then leap out of lakes and oceans with a splash.");
         out.put(P + "fishJumps", fishJumps);
         out.put(P + "fishJumpsAmount", fishJumpsAmount);
+        out.note("Climbing out of water leaves you dripping for a few seconds: drops run down your screen",
+                 "in first person and fall off your body in third person and on other players.");
+        out.put(P + "wetPlayer", wetPlayer);
         out.note("Blinking fireflies drift over grass on warm, clear nights.");
         out.put(P + "fireflies", fireflies);
         out.put(P + "firefliesAmount", firefliesAmount);
@@ -883,6 +890,9 @@ public final class FxConfig {
                  "driven sideways by the wind, a pale fog closing in and a quiet howl.");
         out.put(P + "blizzard", blizzard);
         out.put(P + "blizzardStrength", blizzardStrength);
+        out.note("Frost: pixel ice crystals creep in from the screen corners as you freeze in powder snow",
+                 "(replacing the flat vanilla overlay) and lightly in a blizzard, melting away slowly.");
+        out.put(P + "screenFrost", screenFrost);
         out.note("Sandstorm: when it rains over a warm biome with no precipitation, thick beige fog,",
                  "streams of sand, drifting dust clouds and a dry wind roll in.");
         out.put(P + "sandstorm", sandstorm);

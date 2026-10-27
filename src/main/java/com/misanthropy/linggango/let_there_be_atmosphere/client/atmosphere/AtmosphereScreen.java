@@ -170,7 +170,7 @@ public class AtmosphereScreen extends Screen {
              "FxConfig.windBits", "FxConfig.windBitsAmount", "FxConfig.windStreaks",
              "FxConfig.windSounds", "FxConfig.windSoundVolume", "FxConfig.rustleSounds"},
 
-            {"FxConfig.butterflies", "FxConfig.butterfliesAmount", "FxConfig.birds", "FxConfig.birdsAmount",
+            {"FxConfig.butterflies", "FxConfig.butterfliesAmount", "FxConfig.birds", "FxConfig.birdsAmount", "FxConfig.batSwarm",
              "FxConfig.fireflies", "FxConfig.firefliesAmount", "FxConfig.tumbleweeds",
              "FxConfig.breathPuffs", "FxConfig.footstepPuffs", "FxConfig.footstepPuffsAmount"},
 
@@ -1158,6 +1158,8 @@ public class AtmosphereScreen extends Screen {
                 "Flocks of birds cross the sky by day, and songbirds burst out of trees as you walk past.");
         slider("Bird Amount", (float) FxConfig.birdsAmount, 0f, 3f, 2, "x",
                 v -> FxConfig.birdsAmount = v, "How often flocks fly over and birds leave the trees.");
+        toggle("Bat Swarms", () -> FxConfig.batSwarm, v -> FxConfig.batSwarm = v,
+                "Now and then at dusk a cave mouth near you pours out a swarm of bats that scatter into the sky.");
         toggle("Fireflies", () -> FxConfig.fireflies, v -> FxConfig.fireflies = v,
                 "Blinking fireflies drift over grass on warm, clear nights.");
         slider("Firefly Amount", (float) FxConfig.firefliesAmount, 0f, 3f, 2, "x",

@@ -7,6 +7,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.FishJumps;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Puffs;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AmbientParticles;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AuroraRenderer;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.BatSwarm;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Birds;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Bubbles;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Butterflies;
@@ -129,6 +130,7 @@ public final class StageDispatch {
             NetherStorm.onRenderNetherStormStage(event);
             NetherFx.onRenderNetherFxStage(event);
             Birds.onRenderBirdStage(event);
+            BatSwarm.onRenderBatSwarmStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             SunPass.onRenderSunPassStage(event);
             WaterReflections.onRenderReflectionStage(event);
@@ -191,7 +193,8 @@ public final class StageDispatch {
             AmbientParticles::onClientTick,
             AirMist::onAirMistTick,
             Puffs::onPuffsTick,
-            FishJumps::onFishJumpsTick
+            FishJumps::onFishJumpsTick,
+            BatSwarm::onBatSwarmTick
     );
 
     private static final long FX_TICK_BUDGET_NANOS = 150_000L;

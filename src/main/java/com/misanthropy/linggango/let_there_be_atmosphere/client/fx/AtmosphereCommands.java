@@ -26,6 +26,7 @@ public final class AtmosphereCommands {
                 .then(Commands.literal("start").executes(c -> storm(1)))
                 .then(Commands.literal("stop").executes(c -> storm(0)))
                 .then(Commands.literal("toggle").executes(c -> storm(2))));
+        root.then(Commands.literal("batswarm").executes(c -> bats()));
         dispatcher.register(root);
     }
 
@@ -40,6 +41,11 @@ public final class AtmosphereCommands {
         }
         NetherDust.stopStorm();
         return say("The Nether storm is dying down.");
+    }
+
+    private static int bats() {
+        if (!FxConfig.batSwarm) return say("Bat Swarms are switched off. Turn them on in the Wildlife page of the settings first.");
+        return say(BatSwarm.trigger() ? "A swarm of bats pours out of a cave." : "No cave mouth found nearby, or a swarm is already out.");
     }
 
     private static int say(String text) {

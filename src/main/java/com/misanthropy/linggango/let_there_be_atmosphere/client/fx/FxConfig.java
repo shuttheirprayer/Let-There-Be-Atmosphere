@@ -186,6 +186,7 @@ public final class FxConfig {
     public static double  airMistAmount        = 1.0;
     public static boolean birds                = false;
     public static double  birdsAmount          = 1.0;
+    public static boolean batSwarm             = true;
     public static double  grassBladesDensity   = 1.0;
     public static int     grassBladesStyle     = 0;
     public static boolean vividSky             = true;
@@ -406,6 +407,7 @@ public final class FxConfig {
         airMistAmount       = num(p, "airMistAmount",     1.0,   0.0, 2.0);
         birds               = bool(p, "birds",            false);
         birdsAmount         = num(p, "birdsAmount",       1.0,   0.0, 3.0);
+        batSwarm            = bool(p, "batSwarm",         true);
         grassBladesDensity  = num(p, "grassBladesDensity", 1.0,  0.0, 1.0);
         grassBladesStyle    = (int) num(p, "grassBladesStyle", 0,  0.0, 1.0);
         vividSky            = bool(p, "vividSky",         true);
@@ -773,6 +775,8 @@ public final class FxConfig {
         out.note("Flocks of birds cross the sky by day, and songbirds burst out of trees as you walk past.");
         out.put(P + "birds", birds);
         out.put(P + "birdsAmount", birdsAmount);
+        out.note("Now and then at dusk a cave mouth near you pours out a swarm of bats that scatter into the sky.");
+        out.put(P + "batSwarm", batSwarm);
         out.put(P + "grassBladesDensity", grassBladesDensity);
         out.note("A bold sky that follows the sun: deep blue over a cyan horizon by day, magenta over orange at sunrise and sunset.");
         out.put(P + "vividSky", vividSky);

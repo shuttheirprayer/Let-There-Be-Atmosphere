@@ -209,7 +209,7 @@ public final class BatSwarm {
             }
             float birth = span * i / count + RANDOM.nextFloat() * 0.1F;
             float lifespan = Mth.nextFloat(RANDOM, 11F, 14F);
-            float side = Mth.nextFloat(RANDOM, -0.7F, 0.7F);
+            float side = Mth.nextFloat(RANDOM, -0.5F, 0.5F);
             ROW[0][o] = 0.5F + mouthDx * 4F + mouthDz * side;
             ROW[0][o + 1] = 0.9F + Mth.nextFloat(RANDOM, -0.5F, 0.5F);
             ROW[0][o + 2] = 0.5F + mouthDz * 4F - mouthDx * side;
@@ -220,7 +220,7 @@ public final class BatSwarm {
             ROW[1][o + 3] = lifespan;
             ROW[2][o] = Mth.nextFloat(RANDOM, 0.25F, 1.25F) * (RANDOM.nextBoolean() ? 1F : -1F);
             ROW[2][o + 1] = Mth.nextFloat(RANDOM, 0.7F, 2.2F);
-            ROW[2][o + 2] = 1.5F * Mth.nextFloat(RANDOM, 0.8F, 1.25F);
+            ROW[2][o + 2] = 0.5F * Mth.nextFloat(RANDOM, 0.9F, 1.1F);
             ROW[2][o + 3] = RANDOM.nextFloat();
             life = Math.max(life, birth + lifespan);
         }

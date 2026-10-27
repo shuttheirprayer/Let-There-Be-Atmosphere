@@ -27,6 +27,8 @@
     "atmosphere.SkyColorMixin",
     "atmosphere.StoryCloudRenderMixin",
     "embeddium.EmbeddiumCloudShaderMixin",
+    "embeddium.EmbeddiumFlickerShaderMixin",
+    "embeddium.EmbeddiumFlickerUniformMixin",
     "embeddium.EmbeddiumFogOptionsMixin",
     "embeddium.EmbeddiumGlowShaderMixin",
     "embeddium.EmbeddiumGlowUniformMixin",

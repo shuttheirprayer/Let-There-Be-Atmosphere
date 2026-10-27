@@ -127,7 +127,7 @@ void main() {
         world = center + u * (sx * hu * scale) + vec3(0.0, sy * hv * scale, 0.0) + n * (side * FACE);
         alpha = fade;
         shape = vec4(hu * scale, hv * scale, 1.0, flash);
-        extra = vec4(fill, Clock.x / 9.0 + b.w + (ghost ? age * age * 5.0 : 0.0), 0.0, 0.0);
+        extra = vec4(fill, Clock.x + b.w * 8.0 + (ghost ? age * age * 40.0 : 0.0), 0.0, 0.0);
         kind = 2.0;
     } else {
         int i = k - BURST;

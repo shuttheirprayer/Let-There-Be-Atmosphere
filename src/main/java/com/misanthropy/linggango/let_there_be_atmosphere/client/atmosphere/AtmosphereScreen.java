@@ -1292,7 +1292,7 @@ public class AtmosphereScreen extends Screen {
         toggle("Lava Eruptions", () -> FxConfig.lavaEruptions, v -> FxConfig.lavaEruptions = v,
                 "Now and then a lava pool near you bursts and throws glowing blobs that arc, trail embers and splat back.");
         toggle("Nether Portals", () -> FxConfig.netherPortalFx, v -> FxConfig.netherPortalFx = v,
-                "Lit Nether portals glow violet with a slow pulse, and motes spiral in towards them. The noisy vanilla portal specks next to them are replaced.");
+                "Lit Nether portals glow violet and swirl like a pixel whirlpool, with motes spiralling in. Lighting one flashes and bursts, breaking one sheds falling shards. Vanilla portal specks next to them are replaced.");
     }
 
     private void worldEnd() {

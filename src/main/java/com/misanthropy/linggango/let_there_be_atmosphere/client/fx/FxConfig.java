@@ -706,7 +706,7 @@ public final class FxConfig {
         out.put(P + "lavaParticlesAmount", lavaParticlesAmount);
         out.note("Now and then a lava pool near you bursts and throws glowing blobs that arc, trail embers and splat back.");
         out.put(P + "lavaEruptions", lavaEruptions);
-        out.note("Lit Nether portals glow violet, with motes spiralling in. Vanilla portal specks near them are replaced.");
+        out.note("Lit Nether portals glow violet and swirl like a pixel whirlpool, with motes spiralling in. Lighting one flashes and bursts, breaking one sheds falling shards. Vanilla portal specks near them are replaced.");
         out.put(P + "netherPortalFx", netherPortalFx);
         out.note("Twigs, pebbles, petals, clover and tiny flowers on the ground, and leaves drifting down from trees.");
         out.put(P + "groundLitter", groundLitter);

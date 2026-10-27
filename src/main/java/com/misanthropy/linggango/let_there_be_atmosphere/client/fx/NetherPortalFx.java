@@ -52,8 +52,13 @@ public final class NetherPortalFx {
     private static final int KEEP = 160;
     private static final int MAX_CELLS = 960;
     private static final int MAX_RECTS = 12;
+    private static final int MAX_GHOSTS = 4;
+    private static final int SLOTS = MAX_RECTS + MAX_GHOSTS;
+    private static final int EVENTS = 128;
+    private static final float EVENT_WINDOW = 2.0F;
+    private static final float GHOST_LIFE = 1.7F;
     private static final int MAX_GROUPS = 24;
-    private static final int QUADS = 31;
+    private static final int QUADS = 49;
     private static final double REACH = 60.0;
     private static final double CLEAR = 2.5;
     private static final Map<Long, Cells> CACHE = new HashMap<>();
@@ -70,19 +75,32 @@ public final class NetherPortalFx {
     private static final double[] GROUP_DISTANCE = new double[MAX_GROUPS];
     private static final boolean[] GROUP_TAKEN = new boolean[MAX_GROUPS];
     private static final double[] BOUNDS = new double[MAX_RECTS * 6];
-    private static final float[] ROW_A = new float[MAX_RECTS * 4];
-    private static final float[] ROW_B = new float[MAX_RECTS * 4];
-    private static final FloatBuffer UPLOAD = BufferUtils.createFloatBuffer(MAX_RECTS * 4);
+    private static final int[] BOX = new int[MAX_RECTS * 7];
+    private static final int[] PREV = new int[MAX_RECTS * 7];
+    private static final int[] GHOST_BOX = new int[MAX_GHOSTS * 7];
+    private static final float[] GHOST_DIE = new float[MAX_GHOSTS];
+    private static final long[] EVENT_POS = new long[EVENTS];
+    private static final float[] EVENT_TIME = new float[EVENTS];
+    private static final boolean[] EVENT_LIT = new boolean[EVENTS];
+    private static final long[] PENDING = new long[8];
+    private static final float[] ROW_A = new float[SLOTS * 4];
+    private static final float[] ROW_B = new float[SLOTS * 4];
+    private static final float[] ROW_C = new float[SLOTS * 4];
+    private static final FloatBuffer UPLOAD = BufferUtils.createFloatBuffer(SLOTS * 4);
     private static final Matrix4f MATRIX = new Matrix4f();
     private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
 
     private static ClientLevel known;
     private static int wide, inner, ticks;
-    private static int rects;
+    private static int rects, ghosts, pendingCount, eventNext;
     private static boolean dirty, rebuild;
     private static int data;
     private static double anchorX, anchorY, anchorZ;
+
+    static {
+        java.util.Arrays.fill(EVENT_TIME, -100F);
+    }
 
     private static final class Cells {
         final int chunkX, chunkZ;
@@ -113,8 +131,96 @@ public final class NetherPortalFx {
     private static void clear() {
         CACHE.clear();
         known = null;
-        rects = 0;
+        rects = ghosts = pendingCount = 0;
         wide = inner = 0;
+        java.util.Arrays.fill(EVENT_TIME, -100F);
+    }
+
+    private static float seconds() {
+        return (Util.getMillis() % 3_600_000L) / 1000F;
+    }
+
+    private static float ago(float time) {
+        float d = seconds() - time;
+        return d < 0F ? d + 3600F : d;
+    }
+
+    public static void changed(ClientLevel level, BlockPos pos, BlockState old, BlockState now) {
+        boolean lit = now.is(Blocks.NETHER_PORTAL);
+        if (lit == old.is(Blocks.NETHER_PORTAL) || level != known || !FxConfig.netherPortalFx) return;
+        int i = eventNext++ & (EVENTS - 1);
+        EVENT_POS[i] = pos.asLong();
+        EVENT_TIME[i] = seconds();
+        EVENT_LIT[i] = lit;
+        long key = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
+        for (int k = 0; k < pendingCount; k++) {
+            if (PENDING[k] == key) return;
+        }
+        if (pendingCount < PENDING.length) PENDING[pendingCount++] = key;
+    }
+
+    private static void flush(Minecraft mc) {
+        ClientLevel level = mc.level;
+        LocalPlayer player = mc.player;
+        boolean changed = false;
+        if (level != null && player != null && level == known) {
+            for (int i = 0; i < pendingCount; i++) {
+                changed |= scan(level, ChunkPos.getX(PENDING[i]), ChunkPos.getZ(PENDING[i]));
+            }
+            if (changed) build(player);
+        }
+        pendingCount = 0;
+    }
+
+    private static float eventTime(int[] box, int o, boolean lit) {
+        float best = -1F, bestAge = 0F;
+        for (int i = 0; i < EVENTS; i++) {
+            if (EVENT_LIT[i] != lit) continue;
+            float age = ago(EVENT_TIME[i]);
+            if (age > EVENT_WINDOW || age < bestAge) continue;
+            long p = EVENT_POS[i];
+            int x = BlockPos.getX(p), y = BlockPos.getY(p), z = BlockPos.getZ(p);
+            if (x < box[o] || x >= box[o + 3] || y < box[o + 1] || y >= box[o + 4] || z < box[o + 2] || z >= box[o + 5]) continue;
+            best = EVENT_TIME[i];
+            bestAge = age;
+        }
+        return best;
+    }
+
+    private static void put(int slot, int[] box, int o, float born, float die) {
+        int a = slot * 4;
+        ROW_A[a] = (float) (box[o] - anchorX);
+        ROW_A[a + 1] = (float) (box[o + 1] - anchorY);
+        ROW_A[a + 2] = (float) (box[o + 2] - anchorZ);
+        ROW_A[a + 3] = box[o + 6];
+        ROW_B[a] = (float) (box[o + 3] - anchorX);
+        ROW_B[a + 1] = (float) (box[o + 4] - anchorY);
+        ROW_B[a + 2] = (float) (box[o + 5] - anchorZ);
+        ROW_B[a + 3] = ((box[o] * 73856093 ^ box[o + 1] * 19349663 ^ box[o + 2] * 83492791) & 0xFFFF) / 65536F;
+        ROW_C[a] = born;
+        ROW_C[a + 1] = die;
+        ROW_C[a + 2] = 0F;
+        ROW_C[a + 3] = 0F;
+    }
+
+    private static void layGhosts() {
+        for (int g = 0; g < ghosts; g++) put(rects + g, GHOST_BOX, g * 7, -1F, GHOST_DIE[g]);
+        dirty = true;
+    }
+
+    private static void expireGhosts() {
+        int kept = 0;
+        for (int g = 0; g < ghosts; g++) {
+            if (ago(GHOST_DIE[g]) > GHOST_LIFE) continue;
+            if (kept != g) {
+                System.arraycopy(GHOST_BOX, g * 7, GHOST_BOX, kept * 7, 7);
+                GHOST_DIE[kept] = GHOST_DIE[g];
+            }
+            kept++;
+        }
+        if (kept == ghosts) return;
+        ghosts = kept;
+        layGhosts();
     }
 
     public static void onNetherPortalTick(TickEvent.ClientTickEvent event) {
@@ -257,6 +363,8 @@ public final class NetherPortalFx {
         anchorX = Math.floor(ex);
         anchorY = Math.floor(ey);
         anchorZ = Math.floor(ez);
+        int previous = rects;
+        System.arraycopy(BOX, 0, PREV, 0, previous * 7);
         int count = Math.min(groups, MAX_RECTS);
         for (int slot = 0; slot < count; slot++) {
             int best = -1;
@@ -268,15 +376,15 @@ public final class NetherPortalFx {
             int minX = alongZ ? GROUP_PLANE[best] : GROUP_U0[best], maxX = alongZ ? GROUP_PLANE[best] + 1 : GROUP_U1[best] + 1;
             int minZ = alongZ ? GROUP_U0[best] : GROUP_PLANE[best], maxZ = alongZ ? GROUP_U1[best] + 1 : GROUP_PLANE[best] + 1;
             int minY = GROUP_Y0[best], maxY = GROUP_Y1[best] + 1;
-            int o = slot * 4;
-            ROW_A[o] = (float) (minX - anchorX);
-            ROW_A[o + 1] = (float) (minY - anchorY);
-            ROW_A[o + 2] = (float) (minZ - anchorZ);
-            ROW_A[o + 3] = alongZ ? 1F : 0F;
-            ROW_B[o] = (float) (maxX - anchorX);
-            ROW_B[o + 1] = (float) (maxY - anchorY);
-            ROW_B[o + 2] = (float) (maxZ - anchorZ);
-            ROW_B[o + 3] = ((minX * 73856093 ^ minY * 19349663 ^ minZ * 83492791) & 0xFFFF) / 65536F;
+            int o = slot * 7;
+            BOX[o] = minX;
+            BOX[o + 1] = minY;
+            BOX[o + 2] = minZ;
+            BOX[o + 3] = maxX;
+            BOX[o + 4] = maxY;
+            BOX[o + 5] = maxZ;
+            BOX[o + 6] = alongZ ? 1 : 0;
+            put(slot, BOX, o, eventTime(BOX, o, true), -1F);
             int b = slot * 6;
             BOUNDS[b] = minX - (alongZ ? CLEAR : 1.5);
             BOUNDS[b + 1] = minY - 1.5;
@@ -286,7 +394,23 @@ public final class NetherPortalFx {
             BOUNDS[b + 5] = maxZ + (alongZ ? 1.5 : CLEAR);
         }
         rects = count;
-        dirty = true;
+        for (int p = 0; p < previous; p++) {
+            boolean kept = false;
+            for (int n = 0; n < count && !kept; n++) {
+                kept = java.util.Arrays.equals(PREV, p * 7, p * 7 + 7, BOX, n * 7, n * 7 + 7);
+            }
+            if (kept) continue;
+            float died = eventTime(PREV, p * 7, false);
+            if (died < 0F) continue;
+            if (ghosts == MAX_GHOSTS) {
+                System.arraycopy(GHOST_BOX, 7, GHOST_BOX, 0, (MAX_GHOSTS - 1) * 7);
+                System.arraycopy(GHOST_DIE, 1, GHOST_DIE, 0, MAX_GHOSTS - 1);
+                ghosts--;
+            }
+            System.arraycopy(PREV, p * 7, GHOST_BOX, ghosts * 7, 7);
+            GHOST_DIE[ghosts++] = died;
+        }
+        layGhosts();
     }
 
     private static int merge(int groups) {
@@ -323,7 +447,9 @@ public final class NetherPortalFx {
             Diagnostics.skip(Diagnostics.NETHER_PORTAL, "disabled");
             return;
         }
-        if (rects == 0) {
+        if (pendingCount > 0) flush(Minecraft.getInstance());
+        if (ghosts > 0) expireGhosts();
+        if (rects + ghosts == 0) {
             Diagnostics.skip(Diagnostics.NETHER_PORTAL, "no lit portal nearby");
             return;
         }
@@ -349,16 +475,16 @@ public final class NetherPortalFx {
         SkyProgram.texture(0, data);
         GL20.glUniformMatrix4fv(program.uniform(0), false, MATRIX_UPLOAD);
         GL20.glUniform4f(program.uniform(1), (float) (anchorX - eye.x), (float) (anchorY - eye.y), (float) (anchorZ - eye.z), 0F);
-        GL20.glUniform4f(program.uniform(2), (Util.getMillis() % 3_600_000L) / 1000F, rects, 0F, 0F);
+        GL20.glUniform4f(program.uniform(2), seconds(), rects + ghosts, 0F, 0F);
         GL20.glUniform3f(program.uniform(3), -left.x(), -left.y(), -left.z());
         GL20.glUniform3f(program.uniform(4), up.x(), up.y(), up.z());
-        program.draw(rects * QUADS * 6);
+        program.draw((rects + ghosts) * QUADS * 6);
         program.end();
         RenderSystem.enableCull();
         RenderSystem.depthMask(true);
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableBlend();
-        Diagnostics.mark(Diagnostics.NETHER_PORTAL, Diagnostics.detail() ? String.format("%d portals", rects) : null);
+        Diagnostics.mark(Diagnostics.NETHER_PORTAL, Diagnostics.detail() ? String.format("%d portals, %d breaking", rects, ghosts) : null);
     }
 
     private static void upload() {
@@ -368,7 +494,7 @@ public final class NetherPortalFx {
             GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
             GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
             SkyHeights.unpack();
-            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_RGBA32F, MAX_RECTS, 2, 0, GL11.GL_RGBA, GL11.GL_FLOAT, (FloatBuffer) null);
+            GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_RGBA32F, SLOTS, 3, 0, GL11.GL_RGBA, GL11.GL_FLOAT, (FloatBuffer) null);
             dirty = true;
         }
         if (!dirty) return;
@@ -376,10 +502,13 @@ public final class NetherPortalFx {
         SkyHeights.unpack();
         UPLOAD.clear();
         UPLOAD.put(ROW_A).flip();
-        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, MAX_RECTS, 1, GL11.GL_RGBA, GL11.GL_FLOAT, UPLOAD);
+        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 0, SLOTS, 1, GL11.GL_RGBA, GL11.GL_FLOAT, UPLOAD);
         UPLOAD.clear();
         UPLOAD.put(ROW_B).flip();
-        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 1, MAX_RECTS, 1, GL11.GL_RGBA, GL11.GL_FLOAT, UPLOAD);
+        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 1, SLOTS, 1, GL11.GL_RGBA, GL11.GL_FLOAT, UPLOAD);
+        UPLOAD.clear();
+        UPLOAD.put(ROW_C).flip();
+        GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, 0, 2, SLOTS, 1, GL11.GL_RGBA, GL11.GL_FLOAT, UPLOAD);
         SkyProgram.texture(0, 0);
         dirty = false;
     }

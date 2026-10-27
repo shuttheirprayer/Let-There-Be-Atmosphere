@@ -121,10 +121,13 @@ public final class WaterEdge {
             return;
         }
         if (mc.isPaused()) return;
-        if (current != level || river() != riverWas) {
+        if (current != level) {
             level = current;
-            riverWas = river();
             reset();
+        }
+        if (river() != riverWas) {
+            riverWas = river();
+            java.util.Arrays.fill(AGE, MAX_AGE);
         }
         double px = player.getX(), py = player.getY(), pz = player.getZ();
         if (!anchored || Math.abs(px - anchorX) > REACH || Math.abs(pz - anchorZ) > REACH || Math.abs(py - anchorY) > REACH) {

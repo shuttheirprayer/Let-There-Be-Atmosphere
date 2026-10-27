@@ -33,7 +33,6 @@ final class CloudBlur {
     private static final int[] HALF = new int[2];
     private static final int[] HALF_FRAME = new int[2];
     private static int out;
-    private static int attached;
     private static int cover;
 
     static int takeCover() {
@@ -78,10 +77,7 @@ final class CloudBlur {
 
         if (out == 0) out = GlStateManager.glGenFramebuffers();
         GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, out);
-        if (attached != main.getColorTextureId()) {
-            attached = main.getColorTextureId();
-            GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, attached, 0);
-        }
+        GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, main.getColorTextureId(), 0);
         GlStateManager._viewport(0, 0, main.width, main.height);
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,

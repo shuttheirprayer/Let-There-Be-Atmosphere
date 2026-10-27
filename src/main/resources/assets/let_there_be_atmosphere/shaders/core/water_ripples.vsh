@@ -43,8 +43,8 @@ void main() {
     gl_Position = Transform * vec4(p, 1.0);
     world = xz;
     tile = vec4(float(slot), head.x, head.y, head.z);
-    int packed = int(meta.z + 0.5);
-    int blockLight = packed / 16;
-    lightColor = texelFetch(Sampler1, ivec2(blockLight, packed - blockLight * 16), 0).rgb;
+    int word = int(meta.z + 0.5);
+    int blockLight = word / 16;
+    lightColor = texelFetch(Sampler1, ivec2(blockLight, word - blockLight * 16), 0).rgb;
     fogDistance = length(p + Offset);
 }

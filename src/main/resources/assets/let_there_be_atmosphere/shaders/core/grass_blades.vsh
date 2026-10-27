@@ -115,9 +115,9 @@ void main() {
     gl_Position = Transform * vec4(p, 1.0);
     float cell = floor(h3 * 3.99) * 0.25;
     texCoord = vec2(cell + (sx > 0.0 ? 0.2495 : 0.0005), sy > 0.5 ? 0.001 : 0.999);
-    int packed = int(b.x + 0.5);
-    int block = packed / 16;
-    lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(b.x + 0.5);
+    int block = word / 16;
+    lightColor = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     int tint = int(a.w);
     tintColor = vec3(float((tint >> 16) & 255), float((tint >> 8) & 255), float(tint & 255)) / 255.0;
     shade = tall ? mix(0.82, 1.0, sy) : mix(0.9, 1.0, sy);

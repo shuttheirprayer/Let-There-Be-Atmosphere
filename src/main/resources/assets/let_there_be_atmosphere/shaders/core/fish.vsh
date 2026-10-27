@@ -59,9 +59,9 @@ void main() {
     }
     gl_Position = Transform * vec4(world, 1.0);
     texCoord = vec2((c.x + u) / 6.0, plane == 0 ? v * 0.5 : 0.5 + v * 0.5);
-    int packed = int(c.y + 0.5);
-    int block = packed / 16;
-    lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb * shade;
+    int word = int(c.y + 0.5);
+    int block = word / 16;
+    lightColor = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb * shade;
     fogDistance = length(world + Offset);
     lift = world.y - a.y;
 }

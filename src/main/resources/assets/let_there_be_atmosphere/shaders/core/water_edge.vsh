@@ -39,9 +39,9 @@ void main() {
     origin = a.xz + Origin.xy;
     land = ivec2(b.xy + 0.5);
     stream = int(b.w + 0.5);
-    int packed = int(a.w - 0.5);
-    int block = packed / 16;
-    lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(a.w - 0.5);
+    int block = word / 16;
+    lightColor = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     fogDistance = length(p + Offset);
     float age = Clock.x - b.z;
     if (age < 0.0) age += 3600.0;

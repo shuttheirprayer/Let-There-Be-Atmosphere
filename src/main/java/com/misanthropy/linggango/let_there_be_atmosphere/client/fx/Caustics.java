@@ -22,7 +22,6 @@ final class Caustics {
     private static final double SCALE = 1.0 / 4.5;
 
     private static int frame;
-    private static int attached;
 
     static void draw(Vec3 camera, float top, float slant, float strength) {
         SkyProgram program = SkyProgram.CAUSTICS;
@@ -62,10 +61,7 @@ final class Caustics {
     static void bindColour(RenderTarget main) {
         if (frame == 0) frame = GlStateManager.glGenFramebuffers();
         GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, frame);
-        if (attached != main.getColorTextureId()) {
-            attached = main.getColorTextureId();
-            GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, attached, 0);
-        }
+        GlStateManager._glFramebufferTexture2D(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, GL11.GL_TEXTURE_2D, main.getColorTextureId(), 0);
         GlStateManager._viewport(0, 0, main.width, main.height);
     }
 }

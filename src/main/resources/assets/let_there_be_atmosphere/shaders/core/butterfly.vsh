@@ -51,8 +51,8 @@ void main() {
     vec3 world = here + forward * (along - 0.5) * size * 1.15 + span * out_ * size;
     gl_Position = Transform * vec4(world, 1.0);
     texCoord = vec2((variant + out_) * 0.25, 1.0 - along);
-    int packed = int(b.y + 0.5);
-    int block = packed / 16;
-    lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(b.y + 0.5);
+    int block = word / 16;
+    lightColor = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     fogDistance = length(world + Offset);
 }

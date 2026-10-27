@@ -50,10 +50,10 @@ void main() {
     vec3 world = a.xyz + c.xyz * dt + local;
     gl_Position = Transform * vec4(world, 1.0);
     texCoord = vec2(sx > 0.0 ? 0.998 : 0.002, sy > 0.0 ? 0.002 : 0.998);
-    int packed = int(b.w + 0.5);
-    int block = packed / 16;
+    int word = int(b.w + 0.5);
+    int block = word / 16;
     float shade = plane == 0 ? 1.0 : (plane == 1 ? 0.84 : 0.7);
-    lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb * shade;
+    lightColor = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb * shade;
     float dist = length(world + Offset);
     fogDistance = dist;
     fade = a.w;

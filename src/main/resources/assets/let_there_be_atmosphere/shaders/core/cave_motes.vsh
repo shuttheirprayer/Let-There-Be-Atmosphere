@@ -41,7 +41,7 @@ void nether(int kind, float t, float f, vec3 h, vec3 pos, vec4 b, int vertex) {
     float extra = 0.0;
     vec3 color;
     float alpha;
-    int packed = int(b.z + 0.5);
+    int word = int(b.z + 0.5);
     if (kind == 20) {
         pos += vec3(sin(t * 0.7 + h.x * 6.283) * 0.4 + (h.x - 0.5) * 0.1 * t,
                 t * (0.16 + 0.22 * h.y) + sin(t * 1.9 + h.z * 6.283) * 0.08,
@@ -55,13 +55,13 @@ void nether(int kind, float t, float f, vec3 h, vec3 pos, vec4 b, int vertex) {
                 cos(t * 0.9 + h.z * 6.283) * 0.45 + (h.x - 0.5) * 0.2 * t);
         ey = 0.075 + 0.04 * h.z;
         ex = ey * (0.3 + 0.7 * abs(cos(t * (1.4 + h.y) + h.x * 6.283)));
-        int block = packed / 16;
-        extra = dot(texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb, vec3(0.3, 0.5, 0.2));
+        int block = word / 16;
+        extra = dot(texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb, vec3(0.3, 0.5, 0.2));
         float heat = (1.0 - smoothstep(0.15, 0.9, f)) * (0.7 + 0.3 * sin(t * 7.0 + h.x * 40.0));
         color = mix(vec3(0.3, 0.05, 0.03), hue * 1.2, heat);
         alpha = fade;
     } else {
-        float heading = float(packed) / 256.0 * 6.283;
+        float heading = float(word) / 256.0 * 6.283;
         vec3 wind = vec3(cos(heading), 0.0, sin(heading));
         vec3 side = vec3(-wind.z, 0.0, wind.x);
         float speed = kind == 23 ? 7.0 + 6.0 * h.x : flake ? 4.5 + 3.0 * h.x : 3.0 + 2.5 * h.x;
@@ -230,9 +230,9 @@ void drip(float t, float f, vec3 h, vec3 pos, vec4 b, int vertex) {
     float size = 0.06 + 0.02 * h.z;
     vec3 world = pos + Right * (sx * size * 0.6) + Up * (sy * size);
     gl_Position = Transform * vec4(world, 1.0);
-    int packed = int(b.z + 0.5);
-    int block = packed / 16;
-    vec3 light = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(b.z + 0.5);
+    int block = word / 16;
+    vec3 light = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     vertexColor = vec4(max(light, vec3(0.45)), min(1.0, t * 25.0) * (1.0 - smoothstep(0.9, 1.0, f)));
     texCoord = vec2(0.0);
     fogDistance = length(world + Offset);
@@ -279,9 +279,9 @@ void drip(float t, vec3 pos, vec4 b, int vertex) {
     vec3 world = centre + Right * (sx * half_.x) + Up * (sy * half_.y);
     gl_Position = Transform * vec4(world, 1.0);
     texCoord = vec2(stage, 0.0);
-    int packed = int(b.z + 0.5);
-    int block = packed / 16;
-    vec3 light = max(texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb, vec3(0.5));
+    int word = int(b.z + 0.5);
+    int block = word / 16;
+    vec3 light = max(texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb, vec3(0.5));
     float dist = length(centre + Offset);
     vertexColor = vec4(vec3(0.62, 0.92, 1.0) * light, alpha * (1.0 - smoothstep(18.0, 26.0, dist)));
     fogDistance = dist;
@@ -420,9 +420,9 @@ void main() {
     gl_Position = Transform * vec4(world, 1.0);
     vec4 uv = Sprites[sprite];
     texCoord = vec2(sx > 0.0 ? uv.z : uv.x, sy > 0.0 ? uv.y : uv.w);
-    int packed = int(b.z + 0.5);
-    int block = packed / 16;
-    vec3 light = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(b.z + 0.5);
+    int block = word / 16;
+    vec3 light = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     if (kind == 9) light = vec3(1.0);
     if (kind == 12) light = max(light, vec3(0.8));
     vertexColor = vec4(tint * light, alpha);

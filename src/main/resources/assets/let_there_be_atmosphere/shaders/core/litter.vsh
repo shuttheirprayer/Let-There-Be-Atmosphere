@@ -123,9 +123,9 @@ void main() {
     if (kind != 0) fade *= min(t * 2.0, 1.0) * (1.0 - smoothstep(26.0, 34.0, dist));
     gl_Position = Transform * vec4(world, 1.0);
     texCoord = (origin + vec2(sx > 0.0 ? extent.x - 0.03 : 0.03, sy > 0.0 ? 0.03 : extent.y - 0.03)) / 128.0;
-    int packed = int(b.z + 0.5);
-    int block = packed / 16;
-    lightColor = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(b.z + 0.5);
+    int block = word / 16;
+    lightColor = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     int tint = int(c.x);
     tintColor = vec3(float((tint >> 16) & 255), float((tint >> 8) & 255), float(tint & 255)) / 255.0;
     fogDistance = dist;

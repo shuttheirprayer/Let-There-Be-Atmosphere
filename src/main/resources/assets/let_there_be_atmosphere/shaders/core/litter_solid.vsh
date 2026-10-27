@@ -65,9 +65,9 @@ void main() {
     float contact = mix(0.8, 1.0, smoothstep(0.0, 1.6, m0.y));
     int tint = int(extra.y + 0.5);
     vec3 tone = tint == 0 ? mix(vec3(1.0, 0.97, 0.93), vec3(0.95, 0.98, 1.0), hash(b.y * 53.3)) : vec3(float((tint >> 16) & 255), float((tint >> 8) & 255), float(tint & 255)) / 255.0;
-    int packed = int(b.z + 0.5);
-    int block = packed / 16;
-    vec3 light = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    int word = int(b.z + 0.5);
+    int block = word / 16;
+    vec3 light = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     baseColor = tone * (shade * contact * (0.92 + 0.16 * hash(b.y * 37.1))) * light;
     atlas = m0.w >= 2.0 ? 1.0 : 0.0;
     texCoord = atlas > 0.5 ? vec2(m0.w - 2.0, m1.x) : vec2(m0.w, m1.x) / 64.0;

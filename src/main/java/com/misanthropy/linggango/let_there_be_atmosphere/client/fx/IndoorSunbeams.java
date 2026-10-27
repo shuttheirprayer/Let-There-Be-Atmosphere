@@ -26,7 +26,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
-import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -56,8 +55,6 @@ public final class IndoorSunbeams {
     private static final IntBuffer OCC_UPLOAD = BufferUtils.createIntBuffer(SIZE * SIZE);
     private static final FloatBuffer HEIGHT_UPLOAD = BufferUtils.createFloatBuffer(COLUMNS * SIZE * 2);
     private static final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
-    private static final Matrix4f VIEW_PROJECTION = new Matrix4f();
-    private static final Matrix4f INVERSE = new Matrix4f();
     private static final float[] SLOPE = new float[4];
 
     private static ClientLevel level;
@@ -197,6 +194,10 @@ public final class IndoorSunbeams {
         }
         ClientLevel current = SkyGate.sky(event, Diagnostics.INDOOR_SUNBEAMS, true);
         if (current == null) return;
+        if (!ViewCapture.fresh) {
+            Diagnostics.skip(Diagnostics.INDOOR_SUNBEAMS, "no view captured this frame");
+            return;
+        }
         if (!DynamicFogHandler.active() || ColorGrade.shaderPackActive()) {
             Diagnostics.skip(Diagnostics.INDOOR_SUNBEAMS, "fog handler off or a shader pack owns the image");
             return;
@@ -246,8 +247,6 @@ public final class IndoorSunbeams {
         }
 
         RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
-        VIEW_PROJECTION.set(event.getProjectionMatrix()).mul(event.getPoseStack().last().pose());
-        VIEW_PROJECTION.invert(INVERSE);
         int width = Math.max(main.width / 4, 1);
         int height = Math.max(main.height / 4, 1);
         raw = SunPass.fit(raw, width, height, true);
@@ -257,7 +256,7 @@ public final class IndoorSunbeams {
         SkyProgram.texture(2, heightTexture);
         SkyProgram.texture(1, litMap.getColorTextureId());
         SkyProgram.texture(0, main.getDepthTextureId());
-        INVERSE.get(MATRIX);
+        ViewCapture.INVERSE.get(MATRIX);
         GL20.glUniformMatrix4fv(airProgram.uniform(0), false, MATRIX);
         GL20.glUniform4f(airProgram.uniform(1), SLOPE[0], SLOPE[1], SLOPE[2], SLOPE[3]);
         GL20.glUniform4f(airProgram.uniform(2), cx, cy, cz, REACH);
@@ -298,7 +297,7 @@ public final class IndoorSunbeams {
         dustProgram.begin();
         SkyProgram.texture(1, heightTexture);
         SkyProgram.texture(0, litMap.getColorTextureId());
-        VIEW_PROJECTION.get(MATRIX);
+        ViewCapture.VIEW_PROJECTION.get(MATRIX);
         GL20.glUniformMatrix4fv(dustProgram.uniform(0), false, MATRIX);
         GL20.glUniform4f(dustProgram.uniform(1), SLOPE[0], SLOPE[1], SLOPE[2], SLOPE[3]);
         GL20.glUniform4f(dustProgram.uniform(2), cx, cy, cz, REACH);

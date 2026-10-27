@@ -90,10 +90,10 @@ void main() {
     float kind;
     extra = vec4(0.0);
     if (k < PLANES) {
-        float margin = 1.3 * (1.0 + 0.25 * pulse) * (1.0 + 0.7 * flash) * (ghost ? 0.35 + 0.65 * scale : 1.0);
+        float margin = 1.3 * (1.0 + 0.25 * pulse) * (1.0 + 1.0 * flash) * (ghost ? 0.35 + 0.65 * scale : 1.0);
         float off = (float(k) - 1.0) * 0.6;
         world = center + u * (sx * (hu * scale + margin)) + vec3(0.0, sy * (hv * scale + margin), 0.0) + n * off;
-        alpha = (k == 1 ? 0.36 : 0.2) * (1.0 + 0.7 * pulse + 2.2 * flash + 1.6 * pinch) * fade * smoothstep(0.6, 3.0, length(world));
+        alpha = (k == 1 ? 0.36 : 0.2) * (1.0 + 0.7 * pulse + 2.6 * flash + 1.6 * pinch) * fade * smoothstep(0.6, 3.0, length(world));
         shape = vec4(hu * scale, hv * scale, margin, clamp(flash * 0.9 + pinch * 0.7, 0.0, 1.0));
         kind = 0.0;
     } else if (k < SURFACE) {
@@ -137,7 +137,7 @@ void main() {
             float t = max(age - 0.12 * h.z, 0.0);
             vec2 start = (h.xy * 2.0 - 1.0) * vec2(hu, hv) * 0.95;
             vec2 off = start + vec2((g.x * 2.0 - 1.0) * 1.1 * t, (g.y * 1.5 - 0.3) * t - 4.5 * t * t);
-            float cell = 0.05 + 0.05 * g.w;
+            float cell = 0.07 + 0.06 * g.w;
             world = center + u * off.x + vec3(0.0, off.y, 0.0) + n * ((g.z - 0.5) * 0.25) + Right * (sx * cell * 0.7 + sy * cell * 0.5 * (g.z * 2.0 - 1.0)) + Up * (sy * cell * 1.6);
             alpha = smoothstep(0.0, 0.03, age) * (1.0 - smoothstep(1.0, 1.6, age));
             extra = vec4(0.0, 0.0, g.w, 0.0);

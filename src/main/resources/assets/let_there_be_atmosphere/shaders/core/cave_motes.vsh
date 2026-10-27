@@ -221,6 +221,25 @@ void endMote(int kind, float t, float f, vec3 h, vec3 pos, float variant, int ve
     spot = vec3(sx, sy, look);
 }
 
+void drip(float t, float f, vec3 h, vec3 pos, vec4 b, int vertex) {
+    float angle = h.x * 6.283;
+    float push = 0.1 + 0.3 * h.y;
+    pos += vec3(cos(angle) * push * t, -4.5 * t * t, sin(angle) * push * t);
+    float sx = (vertex == 1 || vertex == 2) ? 1.0 : -1.0;
+    float sy = vertex >= 2 ? 1.0 : -1.0;
+    float size = 0.045 + 0.015 * h.z;
+    vec3 world = pos + Right * (sx * size * 0.6) + Up * (sy * size);
+    gl_Position = Transform * vec4(world, 1.0);
+    int packed = int(b.z + 0.5);
+    int block = packed / 16;
+    vec3 light = texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb;
+    vertexColor = vec4(max(light, vec3(0.45)), min(1.0, t * 25.0) * (1.0 - smoothstep(0.9, 1.0, f)));
+    texCoord = vec2(0.0);
+    fogDistance = length(world + Offset);
+    spot = vec3(sx, sy, 26.0);
+    if (length(pos + Offset) > 24.0) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+}
+
 void main() {
     int slot = gl_VertexID / 6;
     int corner = gl_VertexID - slot * 6;
@@ -243,6 +262,10 @@ void main() {
     int kind = int(b.x + 0.5);
     if (kind >= 20 && kind <= 23) {
         nether(kind, t, f, h, pos, b, vertex);
+        return;
+    }
+    if (kind == 26) {
+        drip(t, f, h, pos, b, vertex);
         return;
     }
     if (kind >= 28 && kind <= 36) {

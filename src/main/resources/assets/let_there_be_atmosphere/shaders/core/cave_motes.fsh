@@ -86,9 +86,20 @@ vec4 endMote(int look) {
     return vec4(tone, level > 0.0 ? vertexColor.a * (level > 0.35 ? 1.0 : 0.55) : 0.0);
 }
 
+vec4 drip() {
+    ivec2 c = ivec2(floor((spot.xy * 0.5 + 0.5) * vec2(2.999, 4.999)));
+    bool body = c.y == 1 || c.y == 2 || c.x == 1;
+    if (!body) return vec4(0.0);
+    bool shine = c.x == 0 && c.y == 2;
+    vec3 tone = shine ? vec3(1.0) : c.y == 0 ? vec3(0.42, 0.7, 0.95) : vec3(0.6, 0.84, 1.0);
+    return vec4(tone * vertexColor.rgb, vertexColor.a);
+}
+
 void main() {
     vec4 color;
-    if (spot.z > 19.5 && spot.z < 23.5) {
+    if (spot.z > 25.5 && spot.z < 26.5) {
+        color = drip();
+    } else if (spot.z > 19.5 && spot.z < 23.5) {
         color = nether(int(spot.z + 0.5));
     } else if (spot.z > 27.5 && spot.z < 36.5) {
         color = endMote(int(spot.z + 0.5));

@@ -41,6 +41,7 @@ public final class LensDrops {
     private static final ResourceLocation SHADER = new ResourceLocation(Let_there_be_atmosphere.MODID, "lens_drops");
     private static final int MAX = 64;
     private static final float RATE = 10F;
+    private static final float SOAK_RATE = 14F;
     private static final float SLIDE_RADIUS = 0.0185F;
     private static final float[] X = new float[MAX];
     private static final float[] Y = new float[MAX];
@@ -70,6 +71,7 @@ public final class LensDrops {
     private static boolean loadFailed;
     private static long last;
     private static float carry;
+    private static float soakCarry;
     private static float aspect = 1F;
     private static int count;
 
@@ -77,7 +79,8 @@ public final class LensDrops {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
-        if (!FxConfig.lensDrops || level == null || player == null) {
+        float soak = WetPlayer.soak();
+        if ((!FxConfig.lensDrops && soak <= 0F && count == 0) || level == null || player == null) {
             Diagnostics.skip(Diagnostics.LENS_DROPS, "disabled");
             clear();
             return;
@@ -87,7 +90,8 @@ public final class LensDrops {
             clear();
             return;
         }
-        if (!level.dimensionType().hasSkyLight() || level.effects().skyType() != DimensionSpecialEffects.SkyType.NORMAL) {
+        boolean rainy = FxConfig.lensDrops && level.dimensionType().hasSkyLight() && level.effects().skyType() == DimensionSpecialEffects.SkyType.NORMAL;
+        if (!rainy && soak <= 0F && count == 0) {
             Diagnostics.skip(Diagnostics.LENS_DROPS, "no rain in this dimension");
             clear();
             return;
@@ -97,7 +101,7 @@ public final class LensDrops {
         long now = Util.getNanos();
         float dt = last == 0L ? 0F : Math.min((now - last) / 1.0E9F, 0.1F);
         last = now;
-        if (!mc.isPaused()) step(mc, level, player, dt);
+        if (!mc.isPaused()) step(mc, level, player, dt, rainy, soak);
         if (count == 0) {
             Diagnostics.skip(Diagnostics.LENS_DROPS, "no drops");
             return;
@@ -111,19 +115,26 @@ public final class LensDrops {
         Diagnostics.mark(Diagnostics.LENS_DROPS, Diagnostics.detail() ? count + " drops" : null);
     }
 
-    private static void step(Minecraft mc, ClientLevel level, LocalPlayer player, float dt) {
+    private static void step(Minecraft mc, ClientLevel level, LocalPlayer player, float dt, boolean rainy, float soak) {
         Camera camera = mc.gameRenderer.getMainCamera();
         boolean submerged = camera.getFluidInCamera() != FogType.NONE;
         CURSOR.set(player.getBlockX(), player.getBlockY(), player.getBlockZ());
         float rain = level.getBiome(CURSOR).value().getPrecipitationAt(CURSOR) == Biome.Precipitation.RAIN ? level.getRainLevel(1F) : 0F;
         CURSOR.set(camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
-        boolean wet = !submerged && rain > 0.05F && level.canSeeSky(CURSOR);
+        boolean falling = rainy && !submerged && rain > 0.05F && level.canSeeSky(CURSOR);
+        boolean soaked = soak > 0F && !submerged && mc.options.getCameraType().isFirstPerson();
+        boolean wet = falling || soaked;
         float up = -camera.getXRot();
         float look = up >= 0F ? 0.12F + 0.88F * (float) Math.pow(Math.min(up / 90F, 1F), 0.8) : Math.max(0F, 0.12F * (1F + up / 18F));
-        if (wet) carry = Math.min(carry + RATE * rain * look * (float) FxConfig.lensDropsAmount * dt, 4F);
+        if (falling) carry = Math.min(carry + RATE * rain * look * (float) FxConfig.lensDropsAmount * dt, 4F);
         while (carry >= 1F) {
             carry -= 1F;
             spawn();
+        }
+        if (soaked) soakCarry = Math.min(soakCarry + SOAK_RATE * soak * soak * dt, 4F);
+        while (soakCarry >= 1F) {
+            soakCarry -= 1F;
+            spawnSoak();
         }
 
         count = 0;
@@ -211,6 +222,18 @@ public final class LensDrops {
         birth(i, 0.02F + RANDOM.nextFloat() * 0.96F, 0.03F + RANDOM.nextFloat() * 0.97F, r, 6F + RANDOM.nextFloat() * 5F);
     }
 
+    private static void spawnSoak() {
+        int i = free();
+        if (i < 0) return;
+        float roll = RANDOM.nextFloat();
+        float top = RANDOM.nextFloat();
+        birth(i, 0.02F + RANDOM.nextFloat() * 0.96F, 0.35F + 0.65F * (1F - top * top), roll > 0.6F ? 0.024F + RANDOM.nextFloat() * 0.016F : 0.012F + 0.01F * roll, 3F + RANDOM.nextFloat() * 3F);
+        if (R[i] > SLIDE_RADIUS) {
+            SLIDING[i] = true;
+            SPEED[i] = 0.03F;
+        }
+    }
+
     private static void birth(int i, float x, float y, float r, float life) {
         ALIVE[i] = true;
         SLIDING[i] = false;
@@ -233,6 +256,7 @@ public final class LensDrops {
         for (int i = 0; i < MAX; i++) ALIVE[i] = false;
         count = 0;
         carry = 0F;
+        soakCarry = 0F;
     }
 
     private static void draw(RenderTarget main) {

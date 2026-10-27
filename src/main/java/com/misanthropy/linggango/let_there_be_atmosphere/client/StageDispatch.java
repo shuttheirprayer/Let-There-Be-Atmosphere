@@ -52,6 +52,8 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaterShine;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaterfallFoam;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WaveSplash;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WeatherStorms;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.ScreenFrost;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WetPlayer;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WindBits;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WindLife;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
@@ -191,7 +193,9 @@ public final class StageDispatch {
             AmbientParticles::onClientTick,
             AirMist::onAirMistTick,
             Puffs::onPuffsTick,
-            FishJumps::onFishJumpsTick
+            FishJumps::onFishJumpsTick,
+            WetPlayer::onWetPlayerTick,
+            ScreenFrost::onScreenFrostTick
     );
 
     private static final long FX_TICK_BUDGET_NANOS = 150_000L;

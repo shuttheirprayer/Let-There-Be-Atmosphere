@@ -1,0 +1,26 @@
+{
+    "vertex": "let_there_be_atmosphere:color_grade",
+    "fragment": "let_there_be_atmosphere:sunbeam_lit",
+    "attributes": [],
+    "samplers": [
+        {
+            "name": "OccSampler"
+        },
+        {
+            "name": "HeightSampler"
+        }
+    ],
+    "uniforms": [
+        {
+            "name": "Slope",
+            "type": "float",
+            "count": 4,
+            "values": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
+        }
+    ]
+}

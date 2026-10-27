@@ -53,6 +53,7 @@ public final class FxConfig {
     public static double  godRayLength   = 0.4;
     public static boolean lensFlare         = true;
     public static double  lensFlareStrength = 0.6;
+    public static boolean indoorSunbeams    = true;
     public static boolean waterRays         = true;
     public static double  waterRaysStrength = 1.0;
     public static boolean caustics          = false;
@@ -289,6 +290,7 @@ public final class FxConfig {
         godRayLength        = num(p, "godRayLength",      0.4,   0.0, 1.0);
         lensFlare           = bool(p, "lensFlare",        true);
         lensFlareStrength   = num(p, "lensFlareStrength", 0.6,   0.0, 2.0);
+        indoorSunbeams      = bool(p, "indoorSunbeams",   true);
         waterRays           = bool(p, "waterRays",        true);
         waterRaysStrength   = num(p, "waterRaysStrength", 1.0,   0.0, 2.0);
         caustics            = bool(p, "caustics",         false);
@@ -553,6 +555,9 @@ public final class FxConfig {
         out.note("Soft coloured rings across the screen when you look near the sun. Hidden when the sun is.");
         out.put(P + "lensFlare", lensFlare);
         out.put(P + "lensFlareStrength", lensFlareStrength);
+        out.note("Indoors and in caves, faint flat shafts of sunlight from windows, doors",
+                 "and holes, with dust specks glowing inside them.");
+        out.put(P + "indoorSunbeams", indoorSunbeams);
         out.put(P + "waterRays", waterRays);
         out.put(P + "waterRaysStrength", waterRaysStrength);
         out.note("Rippling sunlight patterns on the seabed, plus fine motes drifting in the water.");

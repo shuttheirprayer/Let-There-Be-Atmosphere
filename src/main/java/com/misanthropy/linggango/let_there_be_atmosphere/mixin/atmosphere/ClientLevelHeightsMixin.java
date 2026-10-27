@@ -1,5 +1,6 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.mixin.atmosphere;
 
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.IndoorSunbeams;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SkyHeights;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -14,5 +15,6 @@ public abstract class ClientLevelHeightsMixin {
     @Inject(method = "setBlocksDirty", at = @At("HEAD"))
     private void linggango$heightsChanged(BlockPos pos, BlockState old, BlockState now, CallbackInfo ci) {
         SkyHeights.changed((ClientLevel) (Object) this, pos);
+        IndoorSunbeams.changed((ClientLevel) (Object) this, pos);
     }
 }

@@ -1,7 +1,6 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
-import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -184,7 +183,8 @@ public final class BatSwarm {
         if (level.getBrightness(LightLayer.SKY, CURSOR.set(ox, oy, oz)) < 10) return false;
         for (int k = 1; k <= TUNNEL; k++) {
             int x = ox + dx * k, z = oz + dz * k;
-            if (!loaded(x, z) || !air(x, oy, z) || !covered(x, oy, z, k < 3 ? 3 : 5)) return false;
+            if (!loaded(x, z) || !air(x, oy, z) || !covered(x, oy, z, k < 3 ? 3 : 5)
+                    || level.getBlockState(CURSOR.set(x, oy - 1, z)).isAir()) return false;
         }
         mouthX = ox + dx;
         mouthY = oy;
@@ -220,7 +220,7 @@ public final class BatSwarm {
             ROW[1][o + 3] = lifespan;
             ROW[2][o] = Mth.nextFloat(RANDOM, 0.25F, 1.25F) * (RANDOM.nextBoolean() ? 1F : -1F);
             ROW[2][o + 1] = Mth.nextFloat(RANDOM, 0.7F, 2.2F);
-            ROW[2][o + 2] = 1.1F * Mth.nextFloat(RANDOM, 0.8F, 1.25F);
+            ROW[2][o + 2] = 1.5F * Mth.nextFloat(RANDOM, 0.8F, 1.25F);
             ROW[2][o + 3] = RANDOM.nextFloat();
             life = Math.max(life, birth + lifespan);
         }
@@ -235,7 +235,6 @@ public final class BatSwarm {
         SkyProgram program = SkyProgram.BATS;
         if (!program.ready() || sheet() <= 0) return;
 
-        CaptureHook.probeBegin("bats");
         upload();
         Camera camera = event.getCamera();
         Vec3 eye = camera.getPosition();
@@ -268,7 +267,6 @@ public final class BatSwarm {
         RenderSystem.depthMask(true);
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableBlend();
-        CaptureHook.probeEnd("bats");
     }
 
     private static int sheet() {

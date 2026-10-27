@@ -270,8 +270,8 @@ public final class IndoorSunbeams {
         soften.draw(3);
         soften.end();
 
-        float warm = SkyGlow.smooth(0.0F, 0.45F, sunY);
-        float red = 1F, green = Mth.lerp(warm, 0.62F, 0.93F), blue = Mth.lerp(warm, 0.32F, 0.78F);
+        float warm = SkyGlow.smooth(0.1F, 0.7F, sunY);
+        float red = 1F, green = Mth.lerp(warm, 0.6F, 0.9F), blue = Mth.lerp(warm, 0.3F, 0.72F);
         main.bindWrite(true);
         RenderSystem.enableBlend();
         RenderSystem.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);

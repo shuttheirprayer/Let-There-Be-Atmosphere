@@ -26,7 +26,7 @@ public final class WetPlayer {
     private static final float MAX = 8F;
     private static final float DT = 0.05F;
     private static final double REACH = 24.0 * 24.0;
-    private static final float FALL = 4.5F;
+    private static final float FALL = 3F;
     private static final int[] ID = new int[CAP];
     private static final float[] WET = new float[CAP];
     private static final float[] OWED = new float[CAP];
@@ -80,7 +80,7 @@ public final class WetPlayer {
                 WET[slot] = Math.min(MAX, WET[slot] + (p.isUnderWater() ? 2F : 1F) * DT);
             } else {
                 WET[slot] = Math.max(0F, WET[slot] - DT);
-                if (IN_WATER[slot] && WET[slot] > 0.3F) OWED[slot] = Math.min(OWED[slot] + 6F + 2F * WET[slot], 22F);
+                if (IN_WATER[slot] && WET[slot] > 0.3F) OWED[slot] = Math.min(OWED[slot] + 12F + 3F * WET[slot], 36F);
             }
             IN_WATER[slot] = water;
             if (mine) own = WET[slot];
@@ -90,7 +90,7 @@ public final class WetPlayer {
                 continue;
             }
             float k = WET[slot] / MAX;
-            OWED[slot] = Math.min(OWED[slot] + (30F * k * k + 4F * k) * DT, 22F);
+            OWED[slot] = Math.min(OWED[slot] + (55F * k * k + 6F * k) * DT, 36F);
             drip(level, p, slot);
         }
         for (int i = 0; i < CAP; i++) if (ID[i] >= 0 && !SEEN[i]) ID[i] = -1;
@@ -104,7 +104,7 @@ public final class WetPlayer {
     private static void drip(ClientLevel level, AbstractClientPlayer p, int slot) {
         AABB box = p.getBoundingBox();
         double height = box.maxY - box.minY;
-        int n = Math.min((int) OWED[slot], 6);
+        int n = Math.min((int) OWED[slot], 9);
         OWED[slot] -= (int) OWED[slot];
         for (int i = 0; i < n; i++) {
             double x = Mth.lerp(RANDOM.nextDouble(), box.minX, box.maxX);

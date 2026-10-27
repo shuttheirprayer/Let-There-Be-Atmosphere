@@ -57,20 +57,20 @@ void main() {
     float arm = fract(atan(n.y, n.x) / 6.2831853 * 3.0 + r * 1.3 - extra.y);
     vec2 edge = shape.xy - abs(q);
     vec3 color = arm < 0.42 ? DEEP * 1.25 : (arm < 0.8 ? VIOLET : LIGHT);
-    float body = arm < 0.42 ? 0.5 : (arm < 0.8 ? 0.58 : 0.74);
+    float body = arm < 0.42 ? 0.36 : (arm < 0.8 ? 0.42 : 0.52);
     if (min(edge.x, edge.y) < 1.5 / 16.0) {
         color = DEEP;
-        body = 0.7;
-    } else if (r < 0.13) {
+        body = 0.55;
+    } else if (r < 0.1) {
         color = CORE;
-        body = 0.92;
-    } else if (r < 0.26) {
+        body = 0.7;
+    } else if (r < 0.2) {
         color = LIGHT;
-        body = 0.8;
+        body = 0.58;
     }
     if (fy > extra.x - 1.0 / (32.0 * max(shape.y, 0.1))) {
         color = CORE;
-        body = 0.95;
+        body = 0.8;
     }
     color = mix(color, CORE, shape.w * 0.6);
     float alpha = a * body;

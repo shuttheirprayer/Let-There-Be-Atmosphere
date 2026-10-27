@@ -58,6 +58,8 @@ public final class SkyProgram {
             "Transform", "Right", "Up", "Clock", "PuffFog", "Puffs");
     static final SkyProgram BIRDS = new SkyProgram("birds", new String[]{"Sampler0", "Sampler1", "DataSampler"},
             "Transform", "Offset", "Clock", "BirdFog");
+    static final SkyProgram BATS = new SkyProgram("bats", new String[]{"Sampler0", "DataSampler"},
+            "Transform", "Offset", "Clock", "Right", "Up", "BatFog");
     static final SkyProgram WAKE = new SkyProgram("water_wake", new String[]{"Sampler1", "DataSampler"},
             "Transform", "Offset", "Clock", "WakeFog", "Right", "Up");
     static final SkyProgram RIPPLES = new SkyProgram("water_ripples", new String[]{"Sampler1", "DataSampler", "HeightSampler"},

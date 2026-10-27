@@ -157,7 +157,7 @@ public class AtmosphereScreen extends Screen {
             {"FxConfig.mistEnabled", "FxConfig.mistRate", "FxConfig.mistRadius",
              "FxConfig.mistPerTick", "FxConfig.windStrength",
              "FxConfig.heatHaze", "FxConfig.heatHazeStrength", "FxConfig.coldAir", "FxConfig.coldAirStrength",
-             "FxConfig.caveDust", "FxConfig.caveSparkle", "FxConfig.caveDustAmount",
+             "FxConfig.caveDust", "FxConfig.caveSparkle", "FxConfig.caveDustAmount", "FxConfig.caveDrips",
              "FxConfig.lavaLife", "FxConfig.lavaLifeAmount", "FxConfig.deepDarkHaze"},
 
             {"DynamicFogHandler.biomeColorsEnabled", "DynamicFogHandler.vegSaturation",
@@ -176,7 +176,7 @@ public class AtmosphereScreen extends Screen {
 
             {"FxConfig.skyReflection", "FxConfig.skyReflectionStrength", "FxConfig.waterReflections", "FxConfig.waterReflectionStrength",
              "FxConfig.fishJumps", "FxConfig.fishJumpsAmount", "FxConfig.wetPlayer", "FxConfig.waterSparkles", "FxConfig.waterSparklesAmount",
-             "FxConfig.shoreFoam", "FxConfig.shoreFoamStrength", "FxConfig.waterWake", "FxConfig.waterWakeStrength",
+             "FxConfig.shoreFoam", "FxConfig.shoreFoamStrength", "FxConfig.riverFoam", "FxConfig.waterWake", "FxConfig.waterWakeStrength",
              "FxConfig.ripples", "FxConfig.ripplesAmount", "FxConfig.rainRings", "FxConfig.rainRingsAmount",
              "FxConfig.waterfallFoam", "FxConfig.waterfallFoamAmount",
              "FxConfig.caustics", "FxConfig.causticsStrength", "FxConfig.waterRays", "FxConfig.waterRaysStrength",
@@ -1057,6 +1057,8 @@ public class AtmosphereScreen extends Screen {
                 "Underground, fine dust drifts through the air wherever torchlight reaches.");
         toggle("Crystal Sparkle", () -> FxConfig.caveSparkle, v -> FxConfig.caveSparkle = v,
                 "Amethyst glints in the dark and sculk breathes out faint teal motes.");
+        toggle("Cave Drips", () -> FxConfig.caveDrips, v -> FxConfig.caveDrips = v,
+                "Damp cave ceilings under water and in lush and dripstone caves slowly bead up small drops that fall and ring the water below.");
         slider("Cave Particle Amount", (float) FxConfig.caveDustAmount, 0f, 3f, 2, "x",
                 v -> FxConfig.caveDustAmount = v, "How much dust and sparkle there is.");
         toggle("Lava Life", () -> FxConfig.lavaLife, v -> FxConfig.lavaLife = v,
@@ -1217,6 +1219,8 @@ public class AtmosphereScreen extends Screen {
                 "Turquoise shallows and lapping white foam where water meets the shore.");
         slider("Shore Foam Strength", (float) FxConfig.shoreFoamStrength, 0f, 2f, 2, "x",
                 v -> FxConfig.shoreFoamStrength = v, "How strong the foam and shallow tint are.");
+        toggle("River Currents", () -> FxConfig.riverFoam, v -> FxConfig.riverFoam = v,
+                "Faint white foam streaks drift along rivers and flowing water, following the current.");
         toggle("Underwater Light Beams", () -> FxConfig.waterRays, v -> FxConfig.waterRays = v,
                 "Swaying shafts of sunlight slant down through the water when you swim in daylight.");
         slider("Beam Brightness", (float) FxConfig.waterRaysStrength, 0f, 2f, 2, "x",

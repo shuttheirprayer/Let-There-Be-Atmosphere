@@ -4,6 +4,7 @@ uniform sampler2D Sampler0;
 uniform sampler2D FoamSampler;
 uniform vec4 Clock;
 uniform vec4 ShoreFog;
+uniform vec4 Origin;
 
 in vec2 world;
 in vec3 lightColor;
@@ -11,6 +12,7 @@ in float fogDistance;
 in float fade;
 flat in ivec2 land;
 flat in vec2 origin;
+flat in int stream;
 
 out vec4 fragColor;
 
@@ -53,36 +55,79 @@ bool foam(vec2 t, float a, float wobble, float slow) {
     return false;
 }
 
+float rand(vec2 p) {
+    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float streak(vec2 t, vec2 dir, float travel) {
+    vec2 tc = t + 0.5;
+    float along = dot(tc, dir) - travel;
+    float across = dot(tc, vec2(-dir.y, dir.x));
+    float lane = floor(across / 6.0);
+    float start = lane * 6.0 + floor(rand(vec2(lane, 3.7)) * 4.0);
+    float width = 1.0 + step(0.5, rand(vec2(lane, 9.1)));
+    if (across < start || across >= start + width) return -1.0;
+    float shifted = along + rand(vec2(lane, 5.3)) * 34.0;
+    float seg = floor(shifted / 34.0);
+    if (rand(vec2(lane * 7.0 + seg, 1.9)) > 0.55) return -1.0;
+    float from = 2.0 + rand(vec2(seg, lane + 0.5)) * 6.0;
+    float len = 8.0 + rand(vec2(lane + 2.0, seg)) * 12.0;
+    float u = (shifted - seg * 34.0 - from) / len;
+    return u >= 0.0 && u < 1.0 ? u : -1.0;
+}
+
 void main() {
     vec2 t = floor(world * 16.0);
     vec2 c = (t + 0.5) / 16.0;
-    vec3 closest = shore(c);
-    float a = closest.x;
-    vec2 slope = closest.yz / 16.0;
-    float band = a + (texture(Sampler0, c * 0.11 + 0.71).r - 0.5) * 0.6
-            + (fract(sin(dot(t, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.1;
+    bool shoreHere = (stream & 128) == 0 && (land.x | land.y) != 0 && Clock.w > 0.0;
     vec3 color = FAR;
-    float alpha = band < 1.6 ? 0.26 : 0.0;
-    if (band < 0.75) {
-        color = NEAR;
-        alpha = 0.44;
+    float alpha = 0.0;
+    float a = 9.0;
+    bool body = false;
+    if (shoreHere) {
+        vec3 closest = shore(c);
+        a = closest.x;
+        vec2 slope = closest.yz / 16.0;
+        float band = a + (texture(Sampler0, c * 0.11 + 0.71).r - 0.5) * 0.6
+                + (fract(sin(dot(t, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.1;
+        alpha = band < 1.6 ? 0.26 : 0.0;
+        if (band < 0.75) {
+            color = NEAR;
+            alpha = 0.44;
+        }
+        float wobble = texture(Sampler0, c * 0.16 + vec2(0.0, Clock.x * 0.006)).r - 0.5;
+        float slow = texture(Sampler0, c * 0.045 + 0.37).g;
+        bool here = foam(t, a, wobble, slow);
+        bool west = foam(t + vec2(-1.0, 0.0), a - slope.x, wobble, slow);
+        bool north = foam(t + vec2(0.0, -1.0), a - slope.y, wobble, slow);
+        if (here) {
+            bool lit = !west || !north;
+            bool dark = !foam(t + vec2(1.0, 0.0), a + slope.x, wobble, slow) || !foam(t + vec2(0.0, 1.0), a + slope.y, wobble, slow);
+            color = lit && !dark ? LIT : dark && !lit ? SHADE : BODY;
+            alpha = 0.92;
+            body = true;
+        } else if (west || north) {
+            float shadow = 0.3;
+            color = mix(color * alpha, CAST, shadow) / (shadow + alpha * (1.0 - shadow));
+            alpha = shadow + alpha * (1.0 - shadow);
+        }
+        alpha = min(alpha * Clock.w, 1.0);
     }
-    float wobble = texture(Sampler0, c * 0.16 + vec2(0.0, Clock.x * 0.006)).r - 0.5;
-    float slow = texture(Sampler0, c * 0.045 + 0.37).g;
-    bool here = foam(t, a, wobble, slow);
-    bool west = foam(t + vec2(-1.0, 0.0), a - slope.x, wobble, slow);
-    bool north = foam(t + vec2(0.0, -1.0), a - slope.y, wobble, slow);
-    if (here) {
-        bool lit = !west || !north;
-        bool dark = !foam(t + vec2(1.0, 0.0), a + slope.x, wobble, slow) || !foam(t + vec2(0.0, 1.0), a + slope.y, wobble, slow);
-        color = lit && !dark ? LIT : dark && !lit ? SHADE : BODY;
-        alpha = 0.92;
-    } else if (west || north) {
-        float shadow = 0.3;
-        color = mix(color * alpha, CAST, shadow) / (shadow + alpha * (1.0 - shadow));
-        alpha = shadow + alpha * (1.0 - shadow);
+    if ((stream & 16) != 0 && Origin.z > 0.0 && !body && (!shoreHere || a > 1.1)) {
+        float ang = float(stream & 15) * 0.3926991;
+        vec2 dir = vec2(cos(ang), sin(ang));
+        float rate = (stream & 128) != 0 ? 1.1 : float((stream >> 5) & 3) * 0.14;
+        float travel = Clock.x * rate * 16.0;
+        float u = streak(t, dir, travel);
+        if (u >= 0.0) {
+            bool lit = streak(t + vec2(-1.0, 0.0), dir, travel) < 0.0 || streak(t + vec2(0.0, -1.0), dir, travel) < 0.0;
+            bool dark = streak(t + vec2(1.0, 0.0), dir, travel) < 0.0 || streak(t + vec2(0.0, 1.0), dir, travel) < 0.0;
+            vec3 tone = u > 0.8 ? LIT : u < 0.3 ? NEAR : BODY;
+            color = lit && !dark ? mix(tone, LIT, 0.6) : dark && !lit ? mix(tone, SHADE, 0.6) : tone;
+            alpha = u < 0.3 ? 0.5 : 0.85;
+        }
     }
-    alpha = min(alpha * Clock.w, 1.0) * fade;
+    alpha *= fade;
     if (alpha < 0.004) {
         discard;
     }

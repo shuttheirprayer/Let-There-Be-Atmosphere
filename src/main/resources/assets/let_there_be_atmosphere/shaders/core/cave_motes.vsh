@@ -240,6 +240,54 @@ void drip(float t, float f, vec3 h, vec3 pos, vec4 b, int vertex) {
     if (length(pos + Offset) > 24.0) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
 
+void drip(float t, vec3 pos, vec4 b, int vertex) {
+    float code = floor(b.y);
+    float seed = b.y - code;
+    float drop = floor(code * 0.5) / 16.0;
+    bool water = mod(code, 2.0) > 0.5;
+    float bead = 0.5 + 0.9 * seed;
+    float fall = sqrt(max(drop - 0.125, 0.0) / 7.0);
+    float sx = (vertex == 1 || vertex == 2) ? 1.0 : -1.0;
+    float sy = vertex >= 2 ? 1.0 : -1.0;
+    vec2 half_ = vec2(0.03125);
+    vec3 centre = pos;
+    float look = 40.0;
+    float stage = 0.0;
+    float alpha = 1.0;
+    if (t < bead) {
+        float k = t / bead;
+        stage = k < 0.55 ? 0.0 : 1.0;
+        half_ = vec2(stage > 0.5 ? 0.0625 : 0.03125);
+        centre.y -= half_.y;
+        alpha = smoothstep(0.0, 0.15, k);
+    } else if (t < bead + fall) {
+        float u = t - bead;
+        half_ = vec2(0.03125, 0.0625);
+        centre.y -= 0.0625 + 7.0 * u * u;
+        look = 41.0;
+    } else if (!water) {
+        float u = (t - bead - fall) / 0.4;
+        stage = u;
+        half_ = vec2(0.15625, 0.0625);
+        centre.y = pos.y - drop + half_.y;
+        alpha = 1.0 - u * u;
+        look = 42.0;
+    } else {
+        hide();
+        return;
+    }
+    vec3 world = centre + Right * (sx * half_.x) + Up * (sy * half_.y);
+    gl_Position = Transform * vec4(world, 1.0);
+    texCoord = vec2(stage, 0.0);
+    int packed = int(b.z + 0.5);
+    int block = packed / 16;
+    vec3 light = max(texelFetch(Sampler1, ivec2(block, packed - block * 16), 0).rgb, vec3(0.5));
+    float dist = length(centre + Offset);
+    vertexColor = vec4(vec3(0.62, 0.92, 1.0) * light, alpha * (1.0 - smoothstep(18.0, 26.0, dist)));
+    fogDistance = dist;
+    spot = vec3(sx, sy, look);
+}
+
 void main() {
     int slot = gl_VertexID / 6;
     int corner = gl_VertexID - slot * 6;
@@ -260,6 +308,10 @@ void main() {
     vec3 tint;
     int sprite = int(h.z * 2.99);
     int kind = int(b.x + 0.5);
+    if (kind == 40) {
+        drip(t, pos, b, vertex);
+        return;
+    }
     if (kind >= 20 && kind <= 23) {
         nether(kind, t, f, h, pos, b, vertex);
         return;

@@ -125,6 +125,7 @@ public final class FxConfig {
 
     public static boolean caveDust          = true;
     public static boolean caveSparkle       = true;
+    public static boolean caveDrips         = true;
     public static double  caveDustAmount    = 1.0;
 
     public static boolean lavaLife          = true;
@@ -160,6 +161,7 @@ public final class FxConfig {
     public static boolean spreadFxTicks        = true;
     public static boolean shoreFoam            = true;
     public static double  shoreFoamStrength    = 0.6;
+    public static boolean riverFoam            = true;
     public static boolean waterWake            = true;
     public static double  waterWakeStrength    = 1.0;
     public static boolean ripples              = true;
@@ -352,6 +354,7 @@ public final class FxConfig {
         coldAirStrength     = num(p, "coldAirStrength",   1.0,   0.0, 2.0);
         caveDust            = bool(p, "caveDust",         true);
         caveSparkle         = bool(p, "caveSparkle",      true);
+        caveDrips           = bool(p, "caveDrips",        true);
         caveDustAmount      = num(p, "caveDustAmount",    1.0,   0.0, 3.0);
         lavaLife            = bool(p, "lavaLife",         true);
         lavaLifeAmount      = num(p, "lavaLifeAmount",    1.0,   0.0, 3.0);
@@ -384,6 +387,7 @@ public final class FxConfig {
         spreadFxTicks       = bool(p, "spreadFxTicks",    true);
         shoreFoam           = bool(p, "shoreFoam",        true);
         shoreFoamStrength   = num(p, "shoreFoamStrength", 0.6,   0.0, 2.0);
+        riverFoam           = bool(p, "riverFoam",        true);
         waterWake           = bool(p, "waterWake",        true);
         waterWakeStrength   = num(p, "waterWakeStrength", 1.0,   0.0, 2.0);
         ripples             = bool(p, "ripples",          true);
@@ -684,6 +688,8 @@ public final class FxConfig {
         out.put(P + "caveDust", caveDust);
         out.put(P + "caveSparkle", caveSparkle);
         out.put(P + "caveDustAmount", caveDustAmount);
+        out.note("Underground, small drops form on damp ceilings under water and in lush and dripstone caves, then fall and ring the water below.");
+        out.put(P + "caveDrips", caveDrips);
 
         out.section("Lava life");
         out.note("Open lava throws embers and ash, now and then pops and spits droplets,",
@@ -743,6 +749,8 @@ public final class FxConfig {
         out.put(P + "spreadFxTicks", spreadFxTicks);
         out.put(P + "shoreFoam", shoreFoam);
         out.put(P + "shoreFoamStrength", shoreFoamStrength);
+        out.note("Faint foam streaks drift along rivers and flowing water.");
+        out.put(P + "riverFoam", riverFoam);
         out.note("Foam rings trail behind swimmers, mobs and boats moving across water.");
         out.put(P + "waterWake", waterWake);
         out.put(P + "waterWakeStrength", waterWakeStrength);

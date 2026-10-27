@@ -224,10 +224,10 @@ void endMote(int kind, float t, float f, vec3 h, vec3 pos, float variant, int ve
 void drip(float t, float f, vec3 h, vec3 pos, vec4 b, int vertex) {
     float angle = h.x * 6.283;
     float push = 0.1 + 0.3 * h.y;
-    pos += vec3(cos(angle) * push * t, -4.5 * t * t, sin(angle) * push * t);
+    pos += vec3(cos(angle) * push * t, -3.0 * t * t, sin(angle) * push * t);
     float sx = (vertex == 1 || vertex == 2) ? 1.0 : -1.0;
     float sy = vertex >= 2 ? 1.0 : -1.0;
-    float size = 0.045 + 0.015 * h.z;
+    float size = 0.06 + 0.02 * h.z;
     vec3 world = pos + Right * (sx * size * 0.6) + Up * (sy * size);
     gl_Position = Transform * vec4(world, 1.0);
     int packed = int(b.z + 0.5);

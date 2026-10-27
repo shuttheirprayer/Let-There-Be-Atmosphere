@@ -72,6 +72,7 @@ public final class LensDrops {
     private static long last;
     private static float carry;
     private static float soakCarry;
+    private static boolean wasSoaked;
     private static float aspect = 1F;
     private static int count;
 
@@ -131,7 +132,9 @@ public final class LensDrops {
             carry -= 1F;
             spawn();
         }
-        if (soaked) soakCarry = Math.min(soakCarry + SOAK_RATE * soak * soak * dt, 4F);
+        if (soaked && !wasSoaked) soakCarry = 9F;
+        wasSoaked = soaked;
+        if (soaked) soakCarry = Math.min(soakCarry + SOAK_RATE * soak * soak * dt, soakCarry > 4F ? 9F : 4F);
         while (soakCarry >= 1F) {
             soakCarry -= 1F;
             spawnSoak();

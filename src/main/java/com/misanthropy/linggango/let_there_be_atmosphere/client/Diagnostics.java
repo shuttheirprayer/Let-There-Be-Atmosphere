@@ -96,9 +96,10 @@ public final class Diagnostics {
     public static final int TORCH_FLICKER = 69;
     public static final int CAVE_DRIPS = 70;
     public static final int RIVERS = 71;
+    public static final int INDOOR_SUNBEAMS = 72;
 
     private static final String[] LABELS = {
-            "fog", "clouds", "story", "comets", "hazeband", "lightmap", "mist", "aurora", "glow", "rainbow", "grade", "bloom", "shadows", "rays", "lightning", "haze", "groundmist", "cave", "puddles", "lava", "waterrays", "litter", "sway", "blades", "shore", "wake", "caustics", "fireflies", "butterflies", "stars", "sparkles", "sheen", "birds", "nether", "netherdust", "endsky", "enddust", "portal", "rain", "storm", "ripples", "blizzard", "sandstorm", "tumbleweeds", "endair", "netherstorm", "netherrays", "lavafx", "wind", "windpush", "windbits", "windsound", "rustle", "bubbles", "deepdark", "waterfall", "netherportal", "deepwater", "airmist", "occlusion", "flare", "sunshadows", "reflections", "lensdrops", "puffs", "fish", "batswarm", "wetplayer", "frost", "flicker", "cavedrips", "rivers"
+            "fog", "clouds", "story", "comets", "hazeband", "lightmap", "mist", "aurora", "glow", "rainbow", "grade", "bloom", "shadows", "rays", "lightning", "haze", "groundmist", "cave", "puddles", "lava", "waterrays", "litter", "sway", "blades", "shore", "wake", "caustics", "fireflies", "butterflies", "stars", "sparkles", "sheen", "birds", "nether", "netherdust", "endsky", "enddust", "portal", "rain", "storm", "ripples", "blizzard", "sandstorm", "tumbleweeds", "endair", "netherstorm", "netherrays", "lavafx", "wind", "windpush", "windbits", "windsound", "rustle", "bubbles", "deepdark", "waterfall", "netherportal", "deepwater", "airmist", "occlusion", "flare", "sunshadows", "reflections", "lensdrops", "puffs", "fish", "batswarm", "wetplayer", "frost", "flicker", "cavedrips", "rivers", "sunbeams"
     };
 
     private static final String[] COMPAT = {"embeddium", "rubidium", "sodium", "oculus", "iris", "optifine"};

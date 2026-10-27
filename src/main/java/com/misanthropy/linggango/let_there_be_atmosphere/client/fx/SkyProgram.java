@@ -83,6 +83,13 @@ public final class SkyProgram {
             "InverseTransform", "Surface", "Light");
     static final SkyProgram WATER_SOFTEN = new SkyProgram("water_soften", new String[]{"MaskSampler"});
     static final SkyProgram RAYS_BLUR = new SkyProgram("rays_blur", new String[]{"MaskSampler"}, "Ray", "Fall");
+    static final SkyProgram SUNBEAM_LIT = new SkyProgram("sunbeam_lit", new String[]{"OccSampler", "HeightSampler"}, "Slope");
+    static final SkyProgram SUNBEAM_AIR = new SkyProgram("sunbeam_air", new String[]{"DepthSampler", "LitSampler", "HeightSampler"},
+            "InverseTransform", "Slope", "Camera", "Sun");
+    static final SkyProgram SUNBEAM_MIX = new SkyProgram("sunbeam_mix", new String[]{"BeamSampler", "DepthSampler", "LitSampler", "HeightSampler"},
+            "InverseTransform", "Slope", "Camera", "Tint", "Patch");
+    static final SkyProgram SUNBEAM_DUST = new SkyProgram("sunbeam_dust", new String[]{"LitSampler", "HeightSampler"},
+            "Transform", "Slope", "Camera", "Anchor", "Right", "Up", "Tint");
     static final SkyProgram STARS = new SkyProgram("sky_stars", new String[]{"NoiseSampler"}, "Transform", "Field", "Screen", "Band");
     static final SkyProgram CLOUD_BLUR = new SkyProgram("cloud_blur", new String[]{"LayerSampler"}, "Step");
     static final SkyProgram CLOUD_SOFT = new SkyProgram("cloud_soft", new String[]{"BlurSampler", "DepthSampler"},

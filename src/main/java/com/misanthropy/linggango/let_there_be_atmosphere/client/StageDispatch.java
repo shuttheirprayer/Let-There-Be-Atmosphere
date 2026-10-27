@@ -23,6 +23,7 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.EndSky;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Fireflies;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.GrassBlades;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Haze;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.IndoorSunbeams;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.HazeBandRenderer;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.LavaLife;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.LavaSurface;
@@ -137,6 +138,7 @@ public final class StageDispatch {
             BatSwarm.onRenderBatSwarmStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             SunPass.onRenderSunPassStage(event);
+            IndoorSunbeams.onRenderIndoorSunbeamsStage(event);
             WaterReflections.onRenderReflectionStage(event);
         }
     }
@@ -202,7 +204,8 @@ public final class StageDispatch {
             WetPlayer::onWetPlayerTick,
             ScreenFrost::onScreenFrostTick,
             TorchFlicker::onTorchFlickerTick,
-            CaveDrips::onCaveDripsTick
+            CaveDrips::onCaveDripsTick,
+            IndoorSunbeams::onIndoorSunbeamsTick
     );
 
     private static final long FX_TICK_BUDGET_NANOS = 150_000L;

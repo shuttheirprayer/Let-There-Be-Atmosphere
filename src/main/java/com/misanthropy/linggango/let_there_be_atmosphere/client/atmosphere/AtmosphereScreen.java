@@ -98,7 +98,7 @@ public class AtmosphereScreen extends Screen {
 
             {"FxConfig.vividSky", "FxConfig.vividSkyStrength", "FxConfig.sunBurst", "FxConfig.sunBurstStrength", "FxConfig.sunScale", "FxConfig.moonScale", "FxConfig.sunsetFogStrength", "FxConfig.sunsetWide",
              "FxConfig.skyGlowEnabled", "FxConfig.sunGlowStrength", "FxConfig.moonGlowStrength",
-             "FxConfig.godRays", "FxConfig.godRayStrength", "FxConfig.godRayLength", "FxConfig.lensFlare", "FxConfig.lensFlareStrength"},
+             "FxConfig.godRays", "FxConfig.godRayStrength", "FxConfig.godRayLength", "FxConfig.lensFlare", "FxConfig.lensFlareStrength", "FxConfig.indoorSunbeams"},
 
             {"DynamicFogHandler.hazeOverlayEnabled", "DynamicFogHandler.hazeOverlayStrength",
              "FxConfig.hazeBandEnabled", "FxConfig.hazeBandStrength", "FxConfig.hazeBandBottom",
@@ -746,6 +746,8 @@ public class AtmosphereScreen extends Screen {
                 "Soft coloured rings across the screen when you look near the sun.");
         slider("Flare Brightness", (float) FxConfig.lensFlareStrength, 0f, 2f, 2, "x",
                 v -> FxConfig.lensFlareStrength = v, "How bright the rings are.");
+        toggle("Indoor Sunbeams", () -> FxConfig.indoorSunbeams, v -> FxConfig.indoorSunbeams = v,
+                "Soft shafts of sunlight through windows and cave holes, with glowing dust specks.");
     }
 
     private void worldHaze() {

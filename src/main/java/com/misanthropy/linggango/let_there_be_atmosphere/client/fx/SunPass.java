@@ -472,7 +472,7 @@ public final class SunPass {
         return sampler;
     }
 
-    private static TextureTarget fit(TextureTarget target, int width, int height, boolean single) {
+    static TextureTarget fit(TextureTarget target, int width, int height, boolean single) {
         if (target == null) {
             target = new TextureTarget(width, height, false, Minecraft.ON_OSX);
         } else if (target.width != width || target.height != height) {

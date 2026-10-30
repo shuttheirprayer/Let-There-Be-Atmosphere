@@ -213,7 +213,7 @@ void main() {
             t = along;
         }
     }
-    vec3 raw = mix(sky, hit, fade);
+    vec3 raw = mix(sky, hit, max(fade, 1.0 - Horizon.w));
     float known = mix(open * Horizon.w, 1.0, fade);
 
     float facing = clamp(-dir.y, 0.0, 1.0);

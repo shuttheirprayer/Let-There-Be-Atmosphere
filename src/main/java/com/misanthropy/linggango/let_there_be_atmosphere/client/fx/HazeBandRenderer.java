@@ -14,6 +14,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 @Mod.EventBusSubscriber(modid = Let_there_be_atmosphere.MODID, value = Dist.CLIENT)
@@ -25,7 +26,7 @@ public final class HazeBandRenderer {
     private static final float GLOW_SPAN = 0.6F;
 
     public static void onRenderSkyStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) return;
         drawHorizonGlow(event);
         if (!DynamicFogHandler.active() || !FxConfig.hazeBandEnabled || FxConfig.hazeBandStrength <= 0.0) {
             Diagnostics.skip(Diagnostics.HAZEBAND, "disabled");
@@ -98,6 +99,8 @@ public final class HazeBandRenderer {
                              float radius, float low, float peak, float high) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         FogRenderer.setupNoFog();

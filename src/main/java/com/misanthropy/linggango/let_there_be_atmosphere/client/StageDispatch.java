@@ -103,12 +103,12 @@ public final class StageDispatch {
             StarSky.onRenderStarSkyStage(event);
             SkyGlow.onRenderSkyStage(event);
             Lightning.onRenderLightningStage(event);
-            HazeBandRenderer.onRenderSkyStage(event);
             EndSky.onRenderEndSkyStage(event);
-            CometRenderer.onRenderSkyStage(event);
             AuroraRenderer.onRenderSkyStage(event);
             CaptureHook.onCaptureHookStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) {
+            HazeBandRenderer.onRenderSkyStage(event);
+            CometRenderer.onRenderSkyStage(event);
             Tumbleweeds.onRenderTumbleweedsStage(event);
             StormSky.onRenderStormSkyStage(event);
             NetherAir.onRenderLavaSurfaceStage(event);

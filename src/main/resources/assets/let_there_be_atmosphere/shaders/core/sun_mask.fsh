@@ -56,9 +56,13 @@ void main() {
         fragColor = vec4(Ray.z > 0.0 ? exp(-dot(offset, offset) * 3.0) * open : 0.0, 1.0, 1.0, 1.0);
         return;
     }
-    if (Cloud.z > 4.0 && p.y > Cloud.z - 2.0 - length(p) * 0.03) {
-        fragColor = vec4(0.0, 1.0, 1.0, 1.0);
-        return;
+    if (Cloud.z > 4.0) {
+        vec4 unclamped = InverseTransform * vec4(texCoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+        vec3 q = unclamped.w > 0.0 ? unclamped.xyz / unclamped.w : p * 1.0e4;
+        if (q.y > Cloud.z - 2.0 - length(q) * 0.03) {
+            fragColor = vec4(0.0, 1.0, 1.0, 1.0);
+            return;
+        }
     }
     ivec2 centre = ivec2(gl_FragCoord.xy) * 2;
     float closeness = length(p);
@@ -107,6 +111,7 @@ void main() {
         float average = abs(rise) > 0.01 ? (e0 - e1) / (Mist.z * rise) : e0;
         float wisp = texture(NoiseSampler, MistDrift.xy + p.xz * (0.5 * MistDrift.z)).r;
         mist = min(1.0 - exp(-Mist.y * distance * average * mix(1.0, wisp * 1.8, Mist.w)), 0.98);
+        mist *= clamp((Sun.w - max(length(p.xz), abs(p.y))) / max(0.5 * (Sun.w - Sun.z), 1.0), 0.0, 1.0);
     }
     float puddle = 0.0;
     if (Puddle.w > 0.0 && exposed * soil > 0.5 && distance < 64.0) {

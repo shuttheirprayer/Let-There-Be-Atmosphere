@@ -44,6 +44,19 @@ bool onPlane(ivec2 px, float plane, float tol) {
     return d < 1.0 && abs(p.y + Surface.x - plane) < tol;
 }
 
+vec3 pointAt(ivec2 px) {
+    ivec2 at = clamp(px, ivec2(0), ivec2(size) - 1);
+    return unproject((vec2(at) + 0.5) / size * 2.0 - 1.0, texelFetch(DepthSampler, at, 0).r);
+}
+
+bool sloped(ivec2 px, vec3 c, float height) {
+    if (abs(height - floor(height + 0.5)) < 0.05) return false;
+    vec3 right = pointAt(px + ivec2(1, 0)) - c, left = c - pointAt(px - ivec2(1, 0));
+    vec3 up = pointAt(px + ivec2(0, 1)) - c, down = c - pointAt(px - ivec2(0, 1));
+    vec3 n = cross(dot(right, right) < dot(left, left) ? right : left, dot(up, up) < dot(down, down) ? up : down);
+    return abs(n.y) > 0.95 * length(n);
+}
+
 float edgeFade(vec2 ndc) {
     vec2 e = 1.0 - abs(ndc);
     return smoothstep(0.0, 0.1, min(e.x, e.y));
@@ -72,12 +85,18 @@ void main() {
     vec3 surface = unproject(ndc, d);
     vec3 dir = normalize(surface - eye);
     float dist = length(surface);
-    float plane = floor(surface.y + Surface.x - LEVEL + 0.5) + LEVEL;
+    float height = surface.y + Surface.x;
+    float plane = floor(height - LEVEL + 0.5) + LEVEL;
     float tol = 0.004 + dist * 0.00004 + dist * dist * 1.5e-6;
-    if (dir.y > -0.01 || plane - Surface.x > eye.y - 0.05 || abs(surface.y + Surface.x - plane) > tol) discard;
+    if (dir.y > -0.01) discard;
     float wide = tol * 2.5;
-    if (!(onPlane(px + ivec2(1, 0), plane, wide) || onPlane(px - ivec2(1, 0), plane, wide))
-            || !(onPlane(px + ivec2(0, 1), plane, wide) || onPlane(px - ivec2(0, 1), plane, wide))) discard;
+    if (abs(height - plane) > tol
+            || !(onPlane(px + ivec2(1, 0), plane, wide) || onPlane(px - ivec2(1, 0), plane, wide))
+            || !(onPlane(px + ivec2(0, 1), plane, wide) || onPlane(px - ivec2(0, 1), plane, wide))) {
+        if (!sloped(px, surface, height)) discard;
+        plane = height;
+    }
+    if (plane - Surface.x > eye.y - 0.05) discard;
 
     vec3 p = eye + dir * ((plane - Surface.x - eye.y) / dir.y);
     float foot = length(p) * Zenith.w / max(-dir.y, 0.02);
@@ -195,7 +214,7 @@ void main() {
         }
     }
     vec3 raw = mix(sky, hit, fade);
-    float known = mix(open, 1.0, fade);
+    float known = mix(open * Horizon.w, 1.0, fade);
 
     float facing = clamp(-dir.y, 0.0, 1.0);
     float graze = 1.0 - facing;

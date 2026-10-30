@@ -67,6 +67,7 @@ void main() {
         float offset = vertex >= 2 ? -width : width;
         vec3 position = rotate(dir, axis, Path[comet].w - clamp(u, 0.0, 1.0) * Axis[comet].w) * RADIUS + axis * offset;
         gl_Position = Transform * vec4(position, 1.0);
+        gl_Position.z = gl_Position.w;
         texCoord = vec2(u, vertex >= 2 ? 1.0 : 0.0);
         vertexColor = vec4(quantize(mix(HeadColor[comet], TrailColor[comet], u) * a), 1.0);
         head = 0;
@@ -88,6 +89,7 @@ void main() {
     float sx = vertex >= 2 ? 1.0 : -1.0;
     float fx = (vertex == 1 || vertex == 2) ? 1.0 : -1.0;
     gl_Position = Transform * vec4(at * RADIUS + side * sx + forward * fx, 1.0);
+    gl_Position.z = gl_Position.w;
     texCoord = vec2(vertex >= 2 ? 1.0 : 0.0, (vertex == 1 || vertex == 2) ? 1.0 : 0.0);
     vertexColor = vec4(quantize(HeadColor[comet] * alpha), 1.0);
     head = 1;

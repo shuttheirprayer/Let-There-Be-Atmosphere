@@ -19,4 +19,5 @@ void main() {
     float t = float(seg) * TWO_PI / float(SEGMENTS);
     height = y;
     gl_Position = Transform * vec4(cos(t) * Ring.w, y, sin(t) * Ring.w, 1.0);
+    gl_Position.z = gl_Position.w;
 }

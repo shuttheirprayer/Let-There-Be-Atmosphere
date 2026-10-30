@@ -89,7 +89,15 @@ void main() {
     vec3 glow = texture(BloomSampler, texCoord).rgb * (hand ? 0.35 : 1.0);
     glow = max(mix(vec3(dot(glow, vec3(0.2126, 0.7152, 0.0722))), glow, 1.4) * BloomStrength + noise * BloomStrength / 255.0, 0.0);
     color = 1.0 - (1.0 - color) * (1.0 - min(glow, 1.0));
-    color = 1.0 - (1.0 - color) * (1.0 - min(Rays * texture(RaySampler, texCoord).r * (1.0 - 0.4 * sky), 1.0));
+    if (Rays.r + Rays.g + Rays.b > 0.0) {
+        ivec2 maskEdge = textureSize(SunSampler, 0) - 1;
+        ivec2 maskBase = ivec2(floor(texCoord * vec2(maskEdge + 1) - 0.5));
+        float open = 0.0;
+        for (int i = 0; i < 4; i++) {
+            open = max(open, step(0.99, texelFetch(SunSampler, clamp(maskBase + ivec2(i & 1, i >> 1), ivec2(0), maskEdge), 0).b));
+        }
+        color = 1.0 - (1.0 - color) * (1.0 - min(Rays * texture(RaySampler, texCoord).r * (1.0 - 0.4 * open), 1.0));
+    }
     if (Flare.z > 0.0) {
         vec2 aspect = vec2(Vignette.y, 1.0);
         vec2 axis = vec2(0.5) - Flare.xy;

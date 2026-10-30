@@ -17,6 +17,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 @Mod.EventBusSubscriber(modid = Let_there_be_atmosphere.MODID, value = Dist.CLIENT)
@@ -75,7 +76,7 @@ public final class CometRenderer {
     }
 
     public static void onRenderSkyStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) return;
         if (!DynamicFogHandler.active() || !FxConfig.cometsEnabled) {
             Diagnostics.skip(Diagnostics.COMETS, "disabled");
             return;
@@ -141,6 +142,8 @@ public final class CometRenderer {
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE,
                 GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);

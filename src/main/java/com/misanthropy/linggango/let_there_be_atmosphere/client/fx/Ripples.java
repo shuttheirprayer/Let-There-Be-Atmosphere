@@ -2,8 +2,8 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -29,7 +29,7 @@ public final class Ripples {
     private static final float RING_RADIUS = 0.25F;
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final RandomSource RANDOM = RandomSource.create();
-    private static final long BASE = Util.getNanos();
+    private static final double BASE = Tempo.seconds();
 
     private static float rainDebt;
 
@@ -64,7 +64,7 @@ public final class Ripples {
         }
         if (mc.isPaused()) return;
         WaveField.begin(level, player.getX(), player.getY(), player.getZ());
-        if (on() && !RainRings.live()) rain(level, player);
+        if (on() && !RainRings.live() && !Tempo.rainHeld()) rain(level, player);
         WaveField.tick();
         Diagnostics.mark(Diagnostics.RIPPLES, Diagnostics.detail() ? WaveField.tiles() + " wave tiles" : null);
     }
@@ -94,6 +94,6 @@ public final class Ripples {
     public static void onRenderRipplesStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
         if (!WaveField.ready() || !WaveField.active()) return;
-        WaveField.draw(event, ((Util.getNanos() - BASE) / 1.0E9F) % 3600F);
+        WaveField.draw(event, (float) (Tempo.seconds() - BASE) % 3600F);
     }
 }

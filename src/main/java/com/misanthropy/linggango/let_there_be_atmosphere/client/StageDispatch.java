@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import net.minecraft.client.Minecraft;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.AirMist;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.FxConfig;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.FishJumps;
@@ -168,20 +169,17 @@ public final class StageDispatch {
             WaterfallFoam::onWaterfallFoamTick,
             WaterShine::onWaterShineTick,
             WaterEdge::onWaterEdgeTick,
-            Wake::onWakeTick,
             Tumbleweeds::onTumbleweedsTick,
             StormSky::onStormSkyTick,
             Silt::onSiltTick,
             Ripples::onRipplesTick,
             Rainbow::onClientTick,
-            Puddles::onPuddleTick,
             PortalGlow::onPortalGlowTick,
             NetherPortalFx::onNetherPortalTick,
             NetherFx::onNetherFxTick,
             NetherDust::onNetherDustTick,
             NetherAir::onNetherAirTick,
             Mist::onMistTick,
-            Litter::onLitterTick,
             LavaSurface::onLavaSurfaceTick,
             LavaLife::onLavaLifeTick,
             Haze::onHazeTick,
@@ -193,19 +191,25 @@ public final class StageDispatch {
             CaveDust::onCaveDustTick,
             Butterflies::onButterflyTick,
             Bubbles::onBubblesTick,
-            DeepWater::onDeepWaterTick,
             Birds::onBirdTick,
             AuroraRenderer::onClientTick,
             AmbientParticles::onClientTick,
             AirMist::onAirMistTick,
-            Puffs::onPuffsTick,
             FishJumps::onFishJumpsTick,
             BatSwarm::onBatSwarmTick,
-            WetPlayer::onWetPlayerTick,
-            ScreenFrost::onScreenFrostTick,
             TorchFlicker::onTorchFlickerTick,
             CaveDrips::onCaveDripsTick,
             IndoorSunbeams::onIndoorSunbeamsTick
+    );
+
+    private static final List<Consumer<TickEvent.ClientTickEvent>> REAL_TICKS = List.of(
+            DeepWater::onDeepWaterTick,
+            WetPlayer::onWetPlayerTick,
+            ScreenFrost::onScreenFrostTick,
+            Puffs::onPuffsTick,
+            Wake::onWakeTick,
+            Puddles::onPuddleTick,
+            Litter::onLitterTick
     );
 
     private static final long FX_TICK_BUDGET_NANOS = 150_000L;
@@ -214,13 +218,17 @@ public final class StageDispatch {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.START && !Minecraft.getInstance().isPaused()) Tempo.advance();
         DynamicFogHandler.onClientTick(event);
         runPendingFxTicks(Long.MAX_VALUE);
-        if (event.phase == TickEvent.Phase.END && FxConfig.spreadFxTicks) {
-            pendingTick = event;
-            pendingIndex = 0;
-        } else {
-            for (Consumer<TickEvent.ClientTickEvent> tick : FX_TICKS) tick.accept(event);
+        for (Consumer<TickEvent.ClientTickEvent> tick : REAL_TICKS) tick.accept(event);
+        if (Tempo.due()) {
+            if (event.phase == TickEvent.Phase.END && FxConfig.spreadFxTicks) {
+                pendingTick = event;
+                pendingIndex = 0;
+            } else {
+                for (Consumer<TickEvent.ClientTickEvent> tick : FX_TICKS) tick.accept(event);
+            }
         }
         CaptureHook.onCaptureHookTick(event);
     }

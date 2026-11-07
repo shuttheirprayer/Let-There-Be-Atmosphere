@@ -15,6 +15,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,7 +41,7 @@ public final class GrassBlades {
     private GrassBlades() {}
 
     private static final ResourceLocation SHEET = new ResourceLocation(Let_there_be_atmosphere.MODID, "textures/fx/grass_blades.png");
-    private static final int GRID = 5;
+    private static final int GRID = 7;
     private static final int PER_CHUNK = 256;
     private static final int SLOTS = GRID * GRID * PER_CHUNK;
     private static final ResourceLocation TALL = new ResourceLocation(Let_there_be_atmosphere.MODID, "textures/fx/grass_blades_tall.png");
@@ -49,7 +50,7 @@ public final class GrassBlades {
     private static final int MAX_AGE = 200;
     private static final float REBASE = 1800F;
     private static final double REACH = 1024.0;
-    private static final float RADIUS = 30F;
+    private static final float RADIUS = 48F;
 
     private static final float[][] ROW = new float[2][SLOTS * 4];
     private static final FloatBuffer UPLOAD = BufferUtils.createFloatBuffer(SLOTS * 4);
@@ -188,7 +189,7 @@ public final class GrassBlades {
             float density = (float) FxConfig.grassBladesDensity;
             for (int z = 0; z < 16; z++) {
                 for (int x = 0; x < 16; x++) {
-                    if (place(first + z * 16 + x, (cx << 4) + x, (cz << 4) + z, birth, density)) {
+                    if (place(first + PLACED[slot], (cx << 4) + x, (cz << 4) + z, birth, density)) {
                         count++;
                         PLACED[slot]++;
                         LOW[slot] = Math.min(LOW[slot], CURSOR.getY());
@@ -201,6 +202,8 @@ public final class GrassBlades {
     }
 
     private static boolean place(int index, int x, int z, float birth, float density) {
+        float patch = patch(x, z);
+        if (patch <= 0F || hash(x, z, 15) >= patch * 2.2F) return false;
         int top = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
         int ground = Integer.MIN_VALUE;
         for (int y = top - 1; y > top - 40; y--) {
@@ -224,7 +227,7 @@ public final class GrassBlades {
         ROW[0][o + 3] = tint(x, z);
         ROW[1][o] = level.getBrightness(LightLayer.BLOCK, CURSOR) * 16 + level.getBrightness(LightLayer.SKY, CURSOR);
         ROW[1][o + 1] = 0.05F + 0.95F * hash(x, z);
-        ROW[1][o + 2] = density;
+        ROW[1][o + 2] = density * (0.25F + 0.75F * patch);
         ROW[1][o + 3] = birth;
         return true;
     }
@@ -238,8 +241,40 @@ public final class GrassBlades {
         return TINTS[cell];
     }
 
+    private static float patch(int x, int z) {
+        float present = smooth(0.40F, 0.47F, field(x, z, 30F, 11));
+        if (present <= 0F) return 0F;
+        return present * (0.1F + 0.9F * smooth(0.36F, 0.66F, field(x, z, 22F, 21)));
+    }
+
+    private static float field(int x, int z, float scale, int seed) {
+        float warp = scale * 0.55F;
+        float qx = x / scale + (value(x / warp, z / warp, seed) - 0.5F) * 1.1F;
+        float qz = z / scale + (value(x / warp, z / warp, seed + 1) - 0.5F) * 1.1F;
+        return 0.68F * value(qx, qz, seed + 2) + 0.32F * value(qx * 2.6F, qz * 2.6F, seed + 3);
+    }
+
+    private static float value(float x, float z, int seed) {
+        int xi = Mth.floor(x), zi = Mth.floor(z);
+        float fx = x - xi, fz = z - zi;
+        fx = fx * fx * (3F - 2F * fx);
+        fz = fz * fz * (3F - 2F * fz);
+        float a = hash(xi, zi, seed), b = hash(xi + 1, zi, seed);
+        float c = hash(xi, zi + 1, seed), d = hash(xi + 1, zi + 1, seed);
+        return Mth.lerp(fz, Mth.lerp(fx, a, b), Mth.lerp(fx, c, d));
+    }
+
+    private static float smooth(float a, float b, float x) {
+        float k = Mth.clamp((x - a) / (b - a), 0F, 1F);
+        return k * k * (3F - 2F * k);
+    }
+
     private static float hash(int x, int z) {
-        int h = x * 0x27D4EB2D ^ z * 0x165667B1;
+        return hash(x, z, 0);
+    }
+
+    private static float hash(int x, int z, int seed) {
+        int h = x * 0x27D4EB2D ^ z * 0x165667B1 ^ seed * 0x9E3779B9;
         h = (h ^ (h >>> 15)) * 0x85EBCA6B;
         h = (h ^ (h >>> 13)) * 0xC2B2AE35;
         return ((h ^ (h >>> 16)) & 0xFFFF) / 65535F;
@@ -277,9 +312,9 @@ public final class GrassBlades {
         WindSway.update();
         GL20.glUniform4f(program.uniform(4), WindSway.WIND[0], WindSway.WIND[1], WindSway.WIND[2], Math.max(WindSway.WIND[3], 0.6F));
         if (player != null) {
-            GL20.glUniform4f(program.uniform(5), (float) (net.minecraft.util.Mth.lerp(partialTick, player.xo, player.getX()) - anchorX),
-                    (float) (net.minecraft.util.Mth.lerp(partialTick, player.yo, player.getY()) - anchorY),
-                    (float) (net.minecraft.util.Mth.lerp(partialTick, player.zo, player.getZ()) - anchorZ), RADIUS);
+            GL20.glUniform4f(program.uniform(5), (float) (Mth.lerp(partialTick, player.xo, player.getX()) - anchorX),
+                    (float) (Mth.lerp(partialTick, player.yo, player.getY()) - anchorY),
+                    (float) (Mth.lerp(partialTick, player.zo, player.getZ()) - anchorZ), RADIUS);
         }
         for (int i = 1; i < 4; i++) {
             float[] p = WindSway.PUSH[i];
@@ -288,7 +323,6 @@ public final class GrassBlades {
         int perSlot = PER_CHUNK * (tall ? TALL_BLADES : BLADES) * 6;
         FIRSTS.clear();
         COUNTS.clear();
-        int runStart = -1, runEnd = -1;
         for (int slot = 0; slot < PLACED.length; slot++) {
             if (PLACED[slot] == 0) continue;
             double x0 = SLOT_X[slot] << 4, z0 = SLOT_Z[slot] << 4;
@@ -297,20 +331,8 @@ public final class GrassBlades {
             double dy = Math.max(Math.max(LOW[slot] - eye.y, eye.y - HIGH[slot] - 1.0), 0.0);
             if (dx * dx + dy * dy + dz * dz > (RADIUS + 1.0) * (RADIUS + 1.0)) continue;
             if (!event.getFrustum().isVisible(new AABB(x0 - 1.0, LOW[slot] - 0.5, z0 - 1.0, x0 + 17.0, HIGH[slot] + 1.6, z0 + 17.0))) continue;
-            if (slot == runEnd) {
-                runEnd++;
-                continue;
-            }
-            if (runStart >= 0) {
-                FIRSTS.put(runStart * perSlot);
-                COUNTS.put((runEnd - runStart) * perSlot);
-            }
-            runStart = slot;
-            runEnd = slot + 1;
-        }
-        if (runStart >= 0) {
-            FIRSTS.put(runStart * perSlot);
-            COUNTS.put((runEnd - runStart) * perSlot);
+            FIRSTS.put(slot * perSlot);
+            COUNTS.put(PLACED[slot] * perSlot / PER_CHUNK);
         }
         FIRSTS.flip();
         COUNTS.flip();

@@ -11,6 +11,7 @@ import java.nio.FloatBuffer;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import org.joml.Matrix4f;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
@@ -49,11 +50,21 @@ public final class WaterReflections {
     private static int queries = -1;
     private static int idleFrames;
     private static long probedAt;
+    public static boolean masked = true;
+    public static boolean gather = true;
+    private static boolean shrunk;
+    private static final Matrix4f FRESH_VIEW_PROJECTION = new Matrix4f();
+    private static final Matrix4f REPROJECT = new Matrix4f();
+    private static double freshX, freshY, freshZ;
+    private static int freshAge;
+    private static int freshWidth = -1;
+    private static ClientLevel freshLevel;
 
     public static void onRenderReflectionSolidStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) return;
         armed = false;
         taken = false;
+        shrunk = false;
         String why = !FxConfig.waterReflections || FxConfig.waterReflectionStrength <= 0.0 ? "disabled"
                 : !DynamicFogHandler.active() || ColorGrade.shaderPackActive() ? "fog handler off or a shader pack owns the image"
                 : Minecraft.useShaderTransparency() ? "Fabulous graphics keeps water in its own layer"
@@ -81,8 +92,25 @@ public final class WaterReflections {
         CaptureHook.probeBegin("reflect_water");
         RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
         water = fit(water, main, false);
-        blit(main, water, GL11.GL_COLOR_BUFFER_BIT);
-        main.bindWrite(false);
+        if (masked && SkyProgram.WATER_COPY.ready()) {
+            shrink(main);
+            water.bindWrite(true);
+            RenderSystem.disableDepthTest();
+            RenderSystem.depthMask(false);
+            SkyProgram copy = SkyProgram.WATER_COPY;
+            copy.begin();
+            SkyProgram.texture(1, near.getColorTextureId());
+            SkyProgram.texture(0, main.getColorTextureId());
+            copy.draw(3);
+            copy.end();
+            RenderSystem.depthMask(true);
+            RenderSystem.enableDepthTest();
+            main.bindWrite(true);
+            shrunk = true;
+        } else {
+            blit(main, water, GL11.GL_COLOR_BUFFER_BIT);
+            main.bindWrite(false);
+        }
         CaptureHook.probeEnd("reflect_water");
         float[] fog = RenderSystem.getShaderFogColor();
         System.arraycopy(fog, 0, FOG, 0, 3);
@@ -107,7 +135,7 @@ public final class WaterReflections {
         float time = (CaveMotes.now() % 3600F);
         float rough = 0.035F + 0.05F * Puddles.raining();
         float spread = 2F / (ViewCapture.PROJECTION.m11() * main.height);
-        CaptureHook.probeBegin("reflect");
+        CaptureHook.probeBegin("reflect_ssr");
         boolean live = ColorGrade.inPlace();
         int frame;
         if (live) {
@@ -119,32 +147,14 @@ public final class WaterReflections {
         }
         int halfWidth = (main.width + 1) / 2;
         int halfHeight = (main.height + 1) / 2;
-        if (near == null) {
-            near = new TextureTarget(halfWidth, halfHeight, true, Minecraft.ON_OSX);
-        } else if (near.width != halfWidth || near.height != halfHeight) {
-            near.resize(halfWidth, halfHeight, Minecraft.ON_OSX);
-        }
-        near.bindWrite(true);
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(GL11.GL_ALWAYS);
-        RenderSystem.depthMask(true);
-        RenderSystem.colorMask(false, false, false, false);
-        RenderSystem.disableBlend();
-        SkyProgram shrink = SkyProgram.WATER_REFLECT_NEAR;
-        shrink.begin();
-        SkyProgram.texture(0, solid.getDepthTextureId());
-        shrink.draw(3);
-        shrink.end();
-        RenderSystem.depthFunc(GL11.GL_LEQUAL);
-        RenderSystem.colorMask(true, true, true, true);
+        if (!shrunk) shrink(main);
+        shrunk = false;
         reflect = fitHalf(reflect, halfWidth, halfHeight);
-        reflect.setClearColor(0F, 0F, 0F, 0F);
-        reflect.clear(Minecraft.ON_OSX);
-        reflect.bindWrite(true);
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
         program.begin();
+        SkyProgram.texture(5, near.getColorTextureId());
         SkyProgram.texture(4, near.getDepthTextureId());
         SkyProgram.texture(3, Haze.noiseTexture());
         SkyProgram.texture(2, solid.getDepthTextureId());
@@ -162,16 +172,37 @@ public final class WaterReflections {
                 (float) (eye.z - Math.floor(eye.z / 16.0) * 16.0), time, rough);
         GL20.glUniform4f(program.uniform(4), FOG[0], FOG[1], FOG[2], open(level, eye));
         GL20.glUniform4f(program.uniform(5), (float) sky.x, (float) sky.y, (float) sky.z, spread);
-        int query = seenQuery();
-        if (query != 0) GL15.glBeginQuery(GL33.GL_ANY_SAMPLES_PASSED, query);
-        program.draw(3);
-        if (query != 0) GL15.glEndQuery(GL33.GL_ANY_SAMPLES_PASSED);
+        GL20.glUniform1f(program.uniform(6), masked ? 1F : 0F);
+        double dx = eye.x - freshX, dy = eye.y - freshY, dz = eye.z - freshZ;
+        boolean reuse = !Cadence.due(freshAge, Cadence.interval() * 3 / 4) && freshWidth == halfWidth && freshLevel == level
+                && dx * dx + dy * dy + dz * dz < 4.0;
+        if (reuse) {
+            freshAge++;
+        } else {
+            reflect.setClearColor(0F, 0F, 0F, 0F);
+            reflect.clear(Minecraft.ON_OSX);
+            reflect.bindWrite(true);
+            int query = seenQuery();
+            if (query != 0) GL15.glBeginQuery(GL33.GL_ANY_SAMPLES_PASSED, query);
+            program.draw(3);
+            if (query != 0) GL15.glEndQuery(GL33.GL_ANY_SAMPLES_PASSED);
+            FRESH_VIEW_PROJECTION.set(ViewCapture.VIEW_PROJECTION);
+            freshX = eye.x;
+            freshY = eye.y;
+            freshZ = eye.z;
+            freshAge = 0;
+            freshWidth = halfWidth;
+            freshLevel = level;
+        }
         if (linear != 0) GL33.glBindSampler(0, 0);
         program.end();
+        CaptureHook.probeEnd("reflect_ssr");
+        CaptureHook.probeBegin("reflect_mix");
         SkyProgram resolve = SkyProgram.WATER_REFLECT_MIX;
         Caustics.bindColour(main);
         RenderSystem.colorMask(true, true, true, false);
         resolve.begin();
+        SkyProgram.texture(5, near.getColorTextureId());
         SkyProgram.texture(4, solid.getDepthTextureId());
         SkyProgram.texture(3, main.getDepthTextureId());
         SkyProgram.texture(2, water.getColorTextureId());
@@ -180,6 +211,12 @@ public final class WaterReflections {
         ViewCapture.INVERSE.get(MATRIX);
         GL20.glUniformMatrix4fv(resolve.uniform(0), false, MATRIX);
         GL20.glUniform4f(resolve.uniform(1), spread, main.height, (float) (eye.y - Math.floor(eye.y)), 0F);
+        GL20.glUniform1f(resolve.uniform(2), masked ? 1F : 0F);
+        GL20.glUniform1f(resolve.uniform(4), reuse ? 1F : 0F);
+        if (reuse) {
+            REPROJECT.set(FRESH_VIEW_PROJECTION).translate((float) dx, (float) dy, (float) dz).mul(ViewCapture.INVERSE).get(MATRIX);
+            GL20.glUniformMatrix4fv(resolve.uniform(3), false, MATRIX);
+        }
         if (live) ColorGrade.barrier();
         resolve.draw(3);
         resolve.end();
@@ -187,9 +224,35 @@ public final class WaterReflections {
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
         main.bindWrite(true);
-        CaptureHook.probeEnd("reflect");
+        CaptureHook.probeEnd("reflect_mix");
         Diagnostics.mark(Diagnostics.REFLECTIONS, Diagnostics.detail()
                 ? String.format("strength %.2f sky %.2f", FxConfig.waterReflectionStrength, open) : null);
+    }
+
+    private static void shrink(RenderTarget main) {
+        int halfWidth = (main.width + 1) / 2;
+        int halfHeight = (main.height + 1) / 2;
+        if (near == null) {
+            near = new TextureTarget(halfWidth, halfHeight, true, Minecraft.ON_OSX);
+        } else if (near.width != halfWidth || near.height != halfHeight) {
+            near.resize(halfWidth, halfHeight, Minecraft.ON_OSX);
+        }
+        near.bindWrite(true);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL11.GL_ALWAYS);
+        RenderSystem.depthMask(true);
+        RenderSystem.disableBlend();
+        if (!masked) RenderSystem.colorMask(false, false, false, false);
+        SkyProgram program = SkyProgram.WATER_REFLECT_NEAR;
+        program.begin();
+        SkyProgram.texture(1, main.getDepthTextureId());
+        SkyProgram.texture(0, solid.getDepthTextureId());
+        GL20.glUniform1f(program.uniform(0), masked ? 1F : 0F);
+        GL20.glUniform1f(program.uniform(1), gather && ColorGrade.gatherSupported() ? 1F : 0F);
+        program.draw(3);
+        program.end();
+        RenderSystem.colorMask(true, true, true, true);
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
     }
 
     private static boolean waterLikely() {

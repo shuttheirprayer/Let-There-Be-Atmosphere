@@ -2,13 +2,13 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
-import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -56,7 +56,7 @@ public final class NetherFx {
     private static final Matrix4f MATRIX = new Matrix4f();
     private static final FloatBuffer MATRIX_UPLOAD = BufferUtils.createFloatBuffer(16);
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int rayHead, partHead = RAY_SLOTS;
     private static boolean anchored, dirty, rayInit;
     private static double anchorX, anchorY, anchorZ;
@@ -65,7 +65,7 @@ public final class NetherFx {
     private static int data;
 
     private static float now() {
-        return (Util.getNanos() - base) / 1.0E9F;
+        return (float) (Tempo.seconds() - base);
     }
 
     private static void emit(int kind, double x, double y, double z, float seed, float life, float aux, float age) {
@@ -82,7 +82,7 @@ public final class NetherFx {
         if (now > REBASE) {
             for (int i = 0; i < SLOTS; i++) ROW_A[i * 4 + 3] -= now;
             lastBirth -= now;
-            base = Util.getNanos();
+            base = Tempo.seconds();
             now = now();
         }
         int slot;

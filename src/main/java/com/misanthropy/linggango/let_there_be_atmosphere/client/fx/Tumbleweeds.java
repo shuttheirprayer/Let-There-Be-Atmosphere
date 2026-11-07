@@ -2,12 +2,12 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -65,7 +65,7 @@ public final class Tumbleweeds {
     private static final float[] ALPHA = new float[SLOTS];
     private static final int[] AGE = new int[SLOTS], STUCK = new int[SLOTS], COOL = new int[SLOTS], LIGHT = new int[SLOTS];
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int data;
     private static boolean dirty;
     private static boolean anchored;
@@ -75,7 +75,7 @@ public final class Tumbleweeds {
     private static float spawnDebt;
 
     private static float now() {
-        return ((Util.getNanos() - base) / 1.0E9F) % 3600F;
+        return (float) (Tempo.seconds() - base) % 3600F;
     }
 
     public static void onTumbleweedsTick(TickEvent.ClientTickEvent event) {

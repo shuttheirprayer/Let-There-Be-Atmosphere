@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.config.AtmosphereConfigManager;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
@@ -52,7 +53,7 @@ public final class AmbientParticles {
         LocalPlayer player = mc.player;
         if (level == null || player == null) return;
 
-        updateWind(level.getGameTime());
+        updateWind(Tempo.ticks());
 
         if (!DynamicFogHandler.running() || !FxConfig.mistEnabled) {
             Diagnostics.skip(Diagnostics.MIST, "disabled");

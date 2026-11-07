@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
@@ -38,6 +39,7 @@ public final class Wake {
     }
 
     private static int clock;
+    private static int local;
 
     private static boolean on() {
         return FxConfig.waterWake && FxConfig.waterWakeStrength > 0.0;
@@ -62,21 +64,26 @@ public final class Wake {
             return;
         }
         if (mc.isPaused() || !WaveField.ready()) return;
-        clock++;
-        if (clock % 200 == 0) STATES.values().removeIf(s -> clock - s.wet > 100);
+        boolean due = Tempo.due();
+        if (due) clock++;
+        local++;
+        if (due && clock % 200 == 0) STATES.values().removeIf(s -> clock - s.wet > 100);
         float strength = (float) FxConfig.waterWakeStrength;
         AABB box = player.getBoundingBox().inflate(RANGE, 8.0, RANGE);
         int budget = BUDGET;
         for (Entity entity : level.getEntities((Entity) null, box,
                 e -> (e instanceof Boat || (e instanceof LivingEntity || e instanceof ItemEntity) && e.isInWater()) && !e.isPassenger() && !e.isSpectator())) {
+            boolean mine = entity == player || entity == player.getVehicle();
+            if (!due && !mine) continue;
+            int now = mine ? local : clock;
             State state = STATES.get(entity.getId());
             if (state == null) {
                 if (STATES.size() > 256) STATES.clear();
                 state = new State();
                 STATES.put(entity.getId(), state);
             }
-            boolean fresh = clock - state.wet > 5;
-            state.wet = clock;
+            boolean fresh = now - state.wet > 5;
+            state.wet = now;
             if (budget <= 0) continue;
             float surface = surface(level, entity);
             if (Float.isNaN(surface) || entity.getY() > surface + 0.08 || entity.getY() + entity.getBbHeight() < surface - 0.05) continue;
@@ -86,7 +93,7 @@ public final class Wake {
             float width = Math.min(Math.max(entity.getBbWidth(), 0.4F), 1.4F);
 
             if (fresh) {
-                state.entered = clock;
+                state.entered = now;
                 double drop = Math.max(entity.yo - entity.getY(), 0.0);
                 float power = (float) Math.min(Math.max(drop * 2.2, speed * 1.5), 1.0);
                 if (power > 0.08F) {
@@ -97,11 +104,11 @@ public final class Wake {
                     continue;
                 }
             }
-            if (clock - state.entered < 4) continue;
+            if (now - state.entered < 4) continue;
             if (speed > 4.0) continue;
 
             if (entity instanceof Boat boat) {
-                if (speed >= 0.03) boatWake(boat, x, z, dx, dz, speed, surface, strength);
+                if (speed >= 0.03) boatWake(boat, x, z, dx, dz, speed, surface, strength, now);
                 budget--;
             } else if (speed >= 0.03) {
                 trail(x, z, dx, dz, speed, surface, 0.2F + 0.1F * width, Math.min((0.1F + 0.55F * (float) speed) * 0.6F * strength, 0.35F * Math.max(strength, 1F)));
@@ -123,7 +130,7 @@ public final class Wake {
         }
     }
 
-    private static void boatWake(Boat boat, double x, double z, double dx, double dz, double speed, float surface, float strength) {
+    private static void boatWake(Boat boat, double x, double z, double dx, double dz, double speed, float surface, float strength, int now) {
         double dirX = dx / speed, dirZ = dz / speed;
         double nx = -dirZ, nz = dirX;
         double half = boat.getBbWidth() * 0.32;
@@ -138,7 +145,7 @@ public final class Wake {
             net.minecraft.world.phys.Vec3 rot = boat.getViewVector(1F);
             double px = x + (i == 1 ? -rot.z : rot.z), pz = z + (i == 1 ? rot.x : -rot.x);
             WaveField.impulse(px, surface, pz, 0.25F, 0.5F * strength, false);
-            if (clock % 4 == 0) WaveSplash.emit(px, surface, pz, 0.3F, 0.1F);
+            if (now % 4 == 0) WaveSplash.emit(px, surface, pz, 0.3F, 0.1F);
         }
     }
 

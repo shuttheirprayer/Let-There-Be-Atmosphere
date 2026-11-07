@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -158,8 +159,8 @@ public final class NetherAir {
         RenderTarget main = mc.getMainRenderTarget();
 
         float mist = (float) BiomeFx.amount(FxConfig.netherMistDensity, BiomeFx.NETHER_MIST) * LOOK[7] * (1F - 0.65F * storm);
-        driftX += NetherDust.windX() * (0.4F + 5.5F * storm) * dt;
-        driftZ += NetherDust.windZ() * (0.4F + 5.5F * storm) * dt;
+        driftX += NetherDust.windX() * (0.4F + 5.5F * storm) * dt * Tempo.rate();
+        driftZ += NetherDust.windZ() * (0.4F + 5.5F * storm) * dt * Tempo.rate();
 
         int width = Math.max(main.width / 4, 1);
         int height = Math.max(main.height / 4, 1);
@@ -252,7 +253,7 @@ public final class NetherAir {
                 Mth.clamp(0.5F * amount, 0F, 0.95F));
         float fogStart = RenderSystem.getShaderFogStart();
         GL20.glUniform4f(program.uniform(3), fogStart, Math.max(RenderSystem.getShaderFogEnd(), fogStart + 1F), lavaRed,
-                (Util.getMillis() % 3_600_000L) / 1000F);
+                (float) (Tempo.seconds() % 3600.0));
         GL20.glUniform4f(program.uniform(4), Math.floorMod((long) anchorX, 4096L), Math.floorMod((long) anchorZ, 4096L), 0F, 0F);
         program.draw(3);
         program.end();

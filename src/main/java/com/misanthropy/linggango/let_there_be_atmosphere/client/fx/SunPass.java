@@ -3,6 +3,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -27,6 +28,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL;
@@ -49,6 +51,15 @@ public final class SunPass {
     static final float[] RAYS = new float[3];
 
     private static TextureTarget mask;
+    private static TextureTarget shown;
+    private static final Matrix4f FRESH_VIEW_PROJECTION = new Matrix4f();
+    private static final Matrix4f REPROJECT = new Matrix4f();
+    private static double freshX, freshY, freshZ;
+    private static float freshFogEnd;
+    private static int freshKey = -1;
+    private static int freshAge;
+    private static int freshWidth;
+    private static ClientLevel freshLevel;
     private static TextureTarget streak;
     private static TextureTarget rays;
     private static int maskReady;
@@ -62,6 +73,7 @@ public final class SunPass {
     private static int sampler = -1;
     private static float exposure;
     private static long exposureAt;
+    private static float ringClock;
 
     static int takeMask() {
         int texture = maskReady;
@@ -77,6 +89,7 @@ public final class SunPass {
 
     public static void onRenderSunPassStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
+        Cadence.frame();
         maskReady = 0;
         raysReady = 0;
         shadowsReady = false;
@@ -153,67 +166,87 @@ public final class SunPass {
         RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
 
-        maskProgram.begin();
         boolean story = StoryCloudConfig.enabled && StoryClouds.shadowFrame(level, partialTick, camera.x, camera.y, camera.z, STORY);
-        int filter = story ? 0 : sampler();
-        SkyProgram.texture(1, story ? StoryClouds.shadowTexture() : SkyProgram.texture(CLOUDS));
-        if (filter != 0) GL33.glBindSampler(1, filter);
-        SkyProgram.texture(0, main.getDepthTextureId());
-        ViewCapture.INVERSE.get(MATRIX);
-        GL20.glUniformMatrix4fv(maskProgram.uniform(0), false, MATRIX);
-        double drift = (event.getRenderTick() + partialTick) * 0.03F;
-        double cloudU = (camera.x + drift) / 12.0;
-        double cloudV = camera.z / 12.0 + 0.33F;
-        cloudU -= Math.floor(cloudU / 256.0) * 256.0;
-        cloudV -= Math.floor(cloudV / 256.0) * 256.0;
-        float cloudHeight = level.effects().getCloudHeight();
-        if (story) {
-            GL20.glUniform4f(maskProgram.uniform(1), STORY[0], STORY[1], STORY[2], shadow);
-            GL20.glUniform2f(maskProgram.uniform(10), STORY[3], STORY[4]);
-        } else {
-            GL20.glUniform4f(maskProgram.uniform(1), (float) cloudU, (float) cloudV,
-                    Float.isNaN(cloudHeight) ? 0F : cloudHeight + 2.33F - (float) camera.y, shadow);
-            GL20.glUniform2f(maskProgram.uniform(10), 12F, 256F);
-        }
-        GL20.glUniform4f(maskProgram.uniform(2), sunX, Math.max(sunY, 0.2F), ViewCapture.fogStart, ViewCapture.fogEnd);
-        GL20.glUniform4f(maskProgram.uniform(3), u, v, ray > 0F ? aspect : 0F, (float) FxConfig.cloudShadowSoftness * 0.5F);
-        if (mist || puddle || sunShade > 0F) SkyProgram.texture(2, Haze.noiseTexture());
         boolean heights = Puddles.heightsLive() && SkyHeights.texture() != 0;
-        if (heights) SkyProgram.texture(3, SkyHeights.texture());
-        double blockX = Math.floor(camera.x);
-        double blockZ = Math.floor(camera.z);
-        GL20.glUniform4f(maskProgram.uniform(6), (float) (camera.x - blockX), (float) (camera.z - blockZ), (float) camera.y, heights ? 1F : 0F);
-        GL20.glUniform4f(maskProgram.uniform(7), (float) blockX, (float) blockZ, CaveMotes.now(), Puddles.raining());
-        GL20.glUniform2f(maskProgram.uniform(9), SkyHeights.centerX(), SkyHeights.centerZ());
-        if (puddle) {
-            double scale = 1.0 / 18.0;
-            double puddleU = blockX * scale, puddleV = blockZ * scale;
-            float threshold = 0.9F - 0.2F * Puddles.wetness() * (float) Math.min(FxConfig.puddleAmount, 2.0);
-            GL20.glUniform4f(maskProgram.uniform(8), (float) (puddleU - Math.floor(puddleU)), (float) (puddleV - Math.floor(puddleV)), (float) scale, threshold);
-        } else {
-            GL20.glUniform4f(maskProgram.uniform(8), 0F, 0F, 0F, 0F);
-        }
-        GL20.glUniform4f(maskProgram.uniform(12), wet ? 1F : 0F, Math.min(0.24F * damp, 0.45F), Math.min(0.12F * damp, 0.3F), 0F);
-        if (mist) {
-            GL20.glUniform4f(maskProgram.uniform(4), Mist.top(camera.y), Mist.density(), Mist.falloff(), 0.75F);
-            GL20.glUniform4f(maskProgram.uniform(5), Mist.noiseU(camera.x), Mist.noiseV(camera.z), Mist.noiseScale(), 0F);
-        } else {
-            GL20.glUniform4f(maskProgram.uniform(4), 0F, 0F, 1F, 0F);
-        }
         int cover = CloudBlur.takeCover();
-        if (cover != 0) SkyProgram.texture(4, cover);
-        GL20.glUniform1f(maskProgram.uniform(11), cover != 0 ? 1F : 0F);
-        GL20.glUniform4f(maskProgram.uniform(13), occlusion, 1.5F, main.height * 0.5F * ViewCapture.PROJECTION.m11(), 0F);
-        ViewCapture.VIEW_PROJECTION.get(MATRIX);
-        GL20.glUniformMatrix4fv(maskProgram.uniform(14), false, MATRIX);
-        GL20.glUniform4f(maskProgram.uniform(15), sunX, sunY, sunShade, 40F);
-        mask.bindWrite(true);
-        CaptureHook.probeBegin("sun mask");
-        maskProgram.draw(3);
-        CaptureHook.probeEnd("sun mask");
-        if (filter != 0) GL33.glBindSampler(1, 0);
-        maskProgram.end();
-        maskReady = mask.getColorTextureId();
+        int key = (shadow > 0F ? 1 : 0) | (ray > 0F ? 2 : 0) | (occlusion > 0F ? 4 : 0) | (sunShade > 0F ? 8 : 0) | (mist ? 16 : 0)
+                | (puddle ? 32 : 0) | (wet ? 64 : 0) | (story ? 128 : 0) | (heights ? 256 : 0) | (cover != 0 ? 512 : 0);
+        double dx = camera.x - freshX, dy = camera.y - freshY, dz = camera.z - freshZ;
+        boolean reuse = !Cadence.due(freshAge, 0) && key == freshKey && level == freshLevel && SkyProgram.SUN_REPROJECT.ready()
+                && mask.width == freshWidth && dx * dx + dy * dy + dz * dz < 4.0 && Math.abs(ViewCapture.fogEnd - freshFogEnd) < 0.5F && freshFogEnd > 0F;
+        if (reuse) {
+            reproject(main, dx, dy, dz);
+            freshAge++;
+        } else {
+            maskProgram.begin();
+            int filter = story ? 0 : sampler();
+            SkyProgram.texture(1, story ? StoryClouds.shadowTexture() : SkyProgram.texture(CLOUDS));
+            if (filter != 0) GL33.glBindSampler(1, filter);
+            SkyProgram.texture(0, main.getDepthTextureId());
+            ViewCapture.INVERSE.get(MATRIX);
+            GL20.glUniformMatrix4fv(maskProgram.uniform(0), false, MATRIX);
+            double drift = (event.getRenderTick() + partialTick) * 0.03F;
+            double cloudU = (camera.x + drift) / 12.0;
+            double cloudV = camera.z / 12.0 + 0.33F;
+            cloudU -= Math.floor(cloudU / 256.0) * 256.0;
+            cloudV -= Math.floor(cloudV / 256.0) * 256.0;
+            float cloudHeight = level.effects().getCloudHeight();
+            if (story) {
+                GL20.glUniform4f(maskProgram.uniform(1), STORY[0], STORY[1], STORY[2], shadow);
+                GL20.glUniform2f(maskProgram.uniform(10), STORY[3], STORY[4]);
+            } else {
+                GL20.glUniform4f(maskProgram.uniform(1), (float) cloudU, (float) cloudV,
+                        Float.isNaN(cloudHeight) ? 0F : cloudHeight + 2.33F - (float) camera.y, shadow);
+                GL20.glUniform2f(maskProgram.uniform(10), 12F, 256F);
+            }
+            GL20.glUniform4f(maskProgram.uniform(2), sunX, Math.max(sunY, 0.2F), ViewCapture.fogStart, ViewCapture.fogEnd);
+            GL20.glUniform4f(maskProgram.uniform(3), u, v, ray > 0F ? aspect : 0F, (float) FxConfig.cloudShadowSoftness * 0.5F);
+            if (mist || puddle || sunShade > 0F) SkyProgram.texture(2, Haze.noiseTexture());
+            if (heights) SkyProgram.texture(3, SkyHeights.texture());
+            double blockX = Math.floor(camera.x);
+            double blockZ = Math.floor(camera.z);
+            GL20.glUniform4f(maskProgram.uniform(6), (float) (camera.x - blockX), (float) (camera.z - blockZ), (float) camera.y, heights ? 1F : 0F);
+            if (!Tempo.rainHeld()) ringClock = CaveMotes.now();
+            GL20.glUniform4f(maskProgram.uniform(7), (float) blockX, (float) blockZ, ringClock, Puddles.raining());
+            GL20.glUniform2f(maskProgram.uniform(9), SkyHeights.centerX(), SkyHeights.centerZ());
+            if (puddle) {
+                double scale = 1.0 / 18.0;
+                double puddleU = blockX * scale, puddleV = blockZ * scale;
+                float threshold = 0.9F - 0.2F * Puddles.wetness() * (float) Math.min(FxConfig.puddleAmount, 2.0);
+                GL20.glUniform4f(maskProgram.uniform(8), (float) (puddleU - Math.floor(puddleU)), (float) (puddleV - Math.floor(puddleV)), (float) scale, threshold);
+            } else {
+                GL20.glUniform4f(maskProgram.uniform(8), 0F, 0F, 0F, 0F);
+            }
+            GL20.glUniform4f(maskProgram.uniform(12), wet ? 1F : 0F, Math.min(0.24F * damp, 0.45F), Math.min(0.12F * damp, 0.3F), 0F);
+            if (mist) {
+                GL20.glUniform4f(maskProgram.uniform(4), Mist.top(camera.y), Mist.density(), Mist.falloff(), 0.75F);
+                GL20.glUniform4f(maskProgram.uniform(5), Mist.noiseU(camera.x), Mist.noiseV(camera.z), Mist.noiseScale(), 0F);
+            } else {
+                GL20.glUniform4f(maskProgram.uniform(4), 0F, 0F, 1F, 0F);
+            }
+            if (cover != 0) SkyProgram.texture(4, cover);
+            GL20.glUniform1f(maskProgram.uniform(11), cover != 0 ? 1F : 0F);
+            GL20.glUniform4f(maskProgram.uniform(13), occlusion, 1.5F, main.height * 0.5F * ViewCapture.PROJECTION.m11(), 0F);
+            ViewCapture.VIEW_PROJECTION.get(MATRIX);
+            GL20.glUniformMatrix4fv(maskProgram.uniform(14), false, MATRIX);
+            GL20.glUniform4f(maskProgram.uniform(15), sunX, sunY, sunShade, 40F);
+            mask.bindWrite(true);
+            CaptureHook.probeBegin("sun mask");
+            maskProgram.draw(3);
+            CaptureHook.probeEnd("sun mask");
+            if (filter != 0) GL33.glBindSampler(1, 0);
+            maskProgram.end();
+            maskReady = mask.getColorTextureId();
+            FRESH_VIEW_PROJECTION.set(ViewCapture.VIEW_PROJECTION);
+            freshX = camera.x;
+            freshY = camera.y;
+            freshZ = camera.z;
+            freshFogEnd = ViewCapture.fogEnd;
+            freshKey = key;
+            freshLevel = level;
+            freshAge = 0;
+            freshWidth = mask.width;
+        }
         shadowsReady = shadow > 0F || occlusion > 0F || sunShade > 0F;
         if (flare > 0F) {
             FLARE[0] = u;
@@ -243,8 +276,9 @@ public final class SunPass {
             int height = Math.max(main.height / 4, 1);
             streak = fit(streak, width, height, true);
             rays = fit(rays, width, height, true);
+            CaptureHook.probeBegin("rays");
             blurProgram.begin();
-            SkyProgram.texture(0, mask.getColorTextureId());
+            SkyProgram.texture(0, maskReady);
             GL20.glUniform4f(blurProgram.uniform(0), u, v, 1F, 0.94F);
             GL20.glUniform2f(blurProgram.uniform(1), aspect, 0F);
             streak.bindWrite(true);
@@ -255,6 +289,7 @@ public final class SunPass {
             rays.bindWrite(true);
             blurProgram.draw(3);
             blurProgram.end();
+            CaptureHook.probeEnd("rays");
             float warm = SkyGlow.smooth(0.0F, 0.45F, sunY);
             RAYS[0] = ray;
             RAYS[1] = ray * Mth.lerp(warm, 0.62F, 0.93F);
@@ -274,6 +309,25 @@ public final class SunPass {
                 ? String.format("amount %.2f, floor %.1f above camera", Mist.amount(), Mist.top(camera.y)) : null);
         if (haze) Diagnostics.mark(Diagnostics.HAZE, Diagnostics.detail()
                 ? String.format("mirage %.4f, near %.4f, cold %.4f", Haze.mirageAmp(), Haze.nearAmp(), Haze.coldAmp()) : null);
+    }
+
+    private static void reproject(RenderTarget main, double dx, double dy, double dz) {
+        shown = fit(shown, mask.width, mask.height, false);
+        SkyProgram program = SkyProgram.SUN_REPROJECT;
+        program.begin();
+        SkyProgram.texture(1, mask.getColorTextureId());
+        SkyProgram.texture(0, main.getDepthTextureId());
+        ViewCapture.INVERSE.get(MATRIX);
+        GL20.glUniformMatrix4fv(program.uniform(0), false, MATRIX);
+        REPROJECT.set(FRESH_VIEW_PROJECTION).translate((float) dx, (float) dy, (float) dz).get(MATRIX);
+        GL20.glUniformMatrix4fv(program.uniform(1), false, MATRIX);
+        GL20.glUniform4f(program.uniform(2), (float) dx, (float) dy, (float) dz, 1F / freshFogEnd);
+        shown.bindWrite(true);
+        CaptureHook.probeBegin("sun reproject");
+        program.draw(3);
+        CaptureHook.probeEnd("sun reproject");
+        program.end();
+        maskReady = shown.getColorTextureId();
     }
 
     private static void underwater(RenderLevelStageEvent event, ClientLevel level) {

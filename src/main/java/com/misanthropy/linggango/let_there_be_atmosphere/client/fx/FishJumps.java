@@ -2,11 +2,11 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -55,7 +55,7 @@ public final class FishJumps {
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final RandomSource RANDOM = RandomSource.create();
     private static final Matrix4f MATRIX = new Matrix4f();
-    private static final long BASE = Util.getNanos();
+    private static final double BASE = Tempo.seconds();
 
     private static int data;
     private static boolean dirty = true;
@@ -68,7 +68,7 @@ public final class FishJumps {
     private static float lastTime;
 
     private static float now() {
-        return ((Util.getNanos() - BASE) / 1.0E9F) % 3600F;
+        return (float) (Tempo.seconds() - BASE) % 3600F;
     }
 
     private static boolean on() {

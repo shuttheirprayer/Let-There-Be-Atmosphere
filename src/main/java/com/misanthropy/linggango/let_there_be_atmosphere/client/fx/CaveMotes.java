@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -59,7 +60,7 @@ public final class CaveMotes {
     private static AbstractTexture atlas;
     private static final Matrix4f MATRIX = new Matrix4f();
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int head;
     private static int dirtyFrom = -1;
     private static int dirtyCount;
@@ -70,7 +71,7 @@ public final class CaveMotes {
     private static int data;
 
     static float now() {
-        return (Util.getNanos() - base) / 1.0E9F;
+        return (float) (Tempo.seconds() - base);
     }
 
     static void emit(int kind, double x, double y, double z, int block, int sky, float life, float seed) {
@@ -114,7 +115,7 @@ public final class CaveMotes {
     private static void rebase(float now) {
         for (int i = 0; i < SLOTS; i++) ROW_A[i * 4 + 3] -= now;
         lastBirth -= now;
-        base = Util.getNanos();
+        base = Tempo.seconds();
         dirtyFrom = 0;
         dirtyCount = SLOTS;
     }
@@ -183,7 +184,7 @@ public final class CaveMotes {
 
     private static void drift(float partialTick, double eyeY) {
         long nanos = Util.getNanos();
-        float dt = Mth.clamp((nanos - driftClock) / 1.0E9F, 0F, 0.1F);
+        float dt = Mth.clamp((nanos - driftClock) / 1.0E9F, 0F, 0.1F) * Tempo.rate();
         driftClock = nanos;
         if (Minecraft.getInstance().level == null || dt <= 0F || FxConfig.windStrength <= 0.0) return;
         WindParticles.sampleDrift(Minecraft.getInstance().level, partialTick, eyeY);

@@ -2,11 +2,11 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -78,7 +78,7 @@ public final class WaterEdge {
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final Matrix4f MATRIX = new Matrix4f();
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int data;
     private static int dirtyFrom = Integer.MAX_VALUE;
     private static int dirtyTo = -1;
@@ -94,7 +94,7 @@ public final class WaterEdge {
     }
 
     private static float now() {
-        return ((Util.getNanos() - base) / 1.0E9F) % 3600F;
+        return (float) (Tempo.seconds() - base) % 3600F;
     }
 
     private static boolean shore() {

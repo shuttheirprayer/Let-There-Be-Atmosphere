@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.Util;
@@ -87,7 +88,7 @@ public final class NetherDust {
     public static void stopStorm() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        long now = mc.level.getGameTime();
+        long now = Tempo.ticks();
         stormEnd = now;
         nextStorm = now + 3600L;
         stormTarget = 0F;
@@ -96,7 +97,7 @@ public final class NetherDust {
     public static void startStorm() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        long now = mc.level.getGameTime();
+        long now = Tempo.ticks();
         stormEnd = now + 2400L;
         nextStorm = stormEnd + 3000L;
         nextSurge = now + 160L;
@@ -160,7 +161,7 @@ public final class NetherDust {
     }
 
     private static void schedule(ClientLevel level, RandomSource random) {
-        long now = level.getGameTime();
+        long now = Tempo.ticks();
         float rate = BiomeFx.on(FxConfig.netherStorms, BiomeFx.NETHER_STORMS) ? (float) BiomeFx.amount(FxConfig.netherStormRate, BiomeFx.NETHER_STORMS) : 0F;
         if (rate <= 0F) {
             stormTarget = now < stormEnd ? 1F : 0F;
@@ -178,7 +179,7 @@ public final class NetherDust {
     }
 
     private static void pulse(ClientLevel level, RandomSource random) {
-        long now = level.getGameTime();
+        long now = Tempo.ticks();
         if (stormTarget > 0F && storm > 0.4F && now >= nextSurge && now >= surgeEnd) {
             surgeEnd = now + 50L + random.nextInt(70);
             nextSurge = surgeEnd + 160L + random.nextInt(340);
@@ -236,7 +237,7 @@ public final class NetherDust {
         float k = tintReady ? 1F - (float) Math.exp(-Math.min((now - tintAt) / 1.0E9F, 0.25F) * 0.9F) : 1F;
         tintAt = now;
         tintReady = true;
-        float blood = NetherAir.look() == NetherAir.WASTES ? 0.4F * (0.5F + 0.5F * Mth.sin(Util.getMillis() / 9000F)) : 0F;
+        float blood = NetherAir.look() == NetherAir.WASTES ? 0.4F * (0.5F + 0.5F * Mth.sin(Tempo.millis() / 9000F)) : 0F;
         for (int i = 0; i < 3; i++) {
             float target = i == 0 ? Mth.lerp(blood, goal[0], 0.55F) : i == 1 ? Mth.lerp(blood, goal[1], 0.14F) : Mth.lerp(blood, goal[2], 0.06F);
             FOG_TINT[i] += (target - FOG_TINT[i]) * k;

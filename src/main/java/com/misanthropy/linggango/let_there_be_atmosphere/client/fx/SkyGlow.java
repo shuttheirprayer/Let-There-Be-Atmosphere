@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -89,7 +90,7 @@ public final class SkyGlow {
         MATRIX.set(event.getPoseStack().last().pose()).rotateY(-Mth.HALF_PI).rotateX(angle);
         MATRIX.transformDirection(1F, 0F, 0F, AXIS_U);
         MATRIX.transformDirection(0F, 0F, 1F, AXIS_V);
-        draw(sun, moon, dayTime, level.getGameTime(), partialTick);
+        draw(sun, moon, dayTime, Tempo.ticks(partialTick));
         AXIS_U.set(1F, 0F, 0F);
         AXIS_V.set(0F, 1F, 0F);
 
@@ -97,7 +98,7 @@ public final class SkyGlow {
                 ? String.format("sun %.2f, moon %.2f", sun, moon) : null);
     }
 
-    private static void draw(float sun, float moon, float dayTime, long gameTime, float partialTick) {
+    private static void draw(float sun, float moon, float dayTime, double ticks) {
         quads = 0;
         if (sun >= VISIBLE) {
             quads = 1;
@@ -107,7 +108,7 @@ public final class SkyGlow {
             float g = Mth.lerp(warm, 0.95F, SUNSET[1]);
             float b = Mth.lerp(warm, 0.86F, SUNSET[2]);
             float spread = SUN_SIZE * (1F + warm * 0.6F);
-            float spin = (gameTime + partialTick) * RAY_SPIN;
+            float spin = (float) (ticks * RAY_SPIN);
             add(spread * 3.2F, spread * 3.2F, 1F, 0F, GLOW_U, r, g, b, 0.6F * sun);
             add(spread * 9F, spread * 9F, 1F, 0F, GLOW_U, r, g, b, 0.2F * sun);
             add(spread * 14F, spread * 0.8F, 1F, 0F, GLOW_U, r, g, b, 0.22F * sun);
@@ -142,7 +143,7 @@ public final class SkyGlow {
             MATRIX.transformPosition(0F, DISTANCE, 0F, CENTER);
             float warm = DayCurves.sunriseSunset(dayTime, SUNSET) ? SUNSET[3] : 0F;
             float size = BURST_SIZE * Mth.clamp((float) FxConfig.sunScale, 0.1F, 5F);
-            int frame = (int) (((gameTime % 24000L) + partialTick) / 3F) % BURST_FRAMES;
+            int frame = (int) ((ticks % 24000.0) / 3.0) % BURST_FRAMES;
             add(size, size, 1F, 0F, frame / (float) BURST_FRAMES, 1F, Mth.lerp(warm, 0.97F, 0.86F),
                     Mth.lerp(warm, 0.9F, 0.66F), burst, 2F / BURST_FRAMES);
             flush(BURST, burst);

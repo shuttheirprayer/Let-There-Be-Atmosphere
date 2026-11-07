@@ -9,6 +9,8 @@ uniform vec4 Slope;
 uniform vec4 Camera;
 uniform vec4 Tint;
 uniform vec4 Patch;
+uniform mat4 BeamReproject;
+uniform float BeamReused;
 
 in vec2 texCoord;
 
@@ -22,10 +24,16 @@ float sunlit(vec3 l) {
 }
 
 void main() {
-    float beam = texture(BeamSampler, texCoord).r;
+    vec2 beamCoord = texCoord;
+    float depth = 1.0;
+    if (BeamReused > 0.5 || Patch.x > 0.0) depth = texelFetch(DepthSampler, ivec2(gl_FragCoord.xy), 0).r;
+    if (BeamReused > 0.5) {
+        vec4 then = BeamReproject * vec4(texCoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+        if (then.w > 0.0) beamCoord = then.xy / then.w * 0.5 + 0.5;
+    }
+    float beam = texture(BeamSampler, beamCoord).r;
     float light = 0.0;
     if (Patch.x > 0.0) {
-        float depth = texelFetch(DepthSampler, ivec2(gl_FragCoord.xy), 0).r;
         if (depth < 1.0) {
             vec4 world = InverseTransform * vec4(texCoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
             vec3 p = world.xyz / world.w;
@@ -34,5 +42,6 @@ void main() {
         }
     }
     float a = min(beam * Tint.w + light * Patch.x, 0.6);
+    if (a <= 0.0) discard;
     fragColor = vec4(Tint.rgb * a, a);
 }

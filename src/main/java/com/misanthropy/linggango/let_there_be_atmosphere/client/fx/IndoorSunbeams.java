@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -26,6 +27,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -46,9 +48,20 @@ public final class IndoorSunbeams {
     private static final float REACH = 16F;
     private static final float OPEN = -1.0E4F;
     private static final float MAX_SLOPE = 7F;
+    private static final float ROOM_REACH = 10F;
+    private static final float[] RAY_X = new float[8];
+    private static final float[] RAY_Z = new float[8];
+    static {
+        for (int i = 0; i < 8; i++) {
+            RAY_X[i] = Mth.cos(i * Mth.PI / 4F);
+            RAY_Z[i] = Mth.sin(i * Mth.PI / 4F);
+        }
+    }
 
     private static final int[] OCC = new int[SIZE * SIZE];
     private static final int[] OCC_BUILD = new int[SIZE * SIZE];
+    private static final int[] WALL = new int[SIZE * SIZE];
+    private static final int[] WALL_BUILD = new int[SIZE * SIZE];
     private static final float[] HEIGHTS = new float[COLUMNS * SIZE * 2];
     private static final float[] HEIGHTS_BUILD = new float[COLUMNS * SIZE * 2];
     private static final float[] NEAR = new float[4];
@@ -65,6 +78,7 @@ public final class IndoorSunbeams {
     private static int age;
     private static boolean dirty;
     private static boolean litStale = true;
+    private static boolean litFresh;
     private static long litTick = Long.MIN_VALUE;
     private static int occTexture;
     private static int heightTexture;
@@ -72,14 +86,21 @@ public final class IndoorSunbeams {
     private static TextureTarget raw;
     private static TextureTarget beam;
     private static float indoor;
+    private static float enclosed;
     private static long indoorAt;
     private static double driftX, driftY, driftZ;
+    private static final Matrix4f FRESH_VIEW_PROJECTION = new Matrix4f();
+    private static final Matrix4f REPROJECT = new Matrix4f();
+    private static double freshX, freshY, freshZ;
+    private static int freshAge;
+    private static int freshWidth = -1;
     private static long driftAt;
 
     public static void onIndoorSunbeamsTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel current = mc.level;
+        enclosed = 0F;
         if (!FxConfig.indoorSunbeams || current == null || mc.player == null || !current.dimensionType().hasSkyLight()) return;
         if (current != level) {
             level = current;
@@ -87,8 +108,9 @@ public final class IndoorSunbeams {
             buildSlice = -1;
         }
         float sunY = Mth.cos(current.getTimeOfDay(1F) * Mth.TWO_PI);
-        Vec3 eye = mc.gameRenderer.getMainCamera().getPosition();
+        Vec3 eye = mc.player.getEyePosition();
         if (sunY < 0.1F || current.getRainLevel(1F) > 0.95F || !covered(current, eye)) return;
+        if (live) enclosed = enclosure(eye);
         int ox = (Mth.floor(eye.x) >> 2 << 2) - SIZE / 2;
         int oy = (Mth.floor(eye.y) >> 2 << 2) - 12;
         int oz = (Mth.floor(eye.z) >> 2 << 2) - SIZE / 2;
@@ -100,10 +122,11 @@ public final class IndoorSunbeams {
             age = 0;
         }
         if (buildSlice < 0) return;
-        for (int i = 0; i < SLICES_PER_TICK && buildSlice < SIZE; i++) slice(OCC_BUILD, HEIGHTS_BUILD, buildX, buildY, buildZ, buildSlice++);
+        for (int i = 0; i < SLICES_PER_TICK && buildSlice < SIZE; i++) slice(OCC_BUILD, WALL_BUILD, HEIGHTS_BUILD, buildX, buildY, buildZ, buildSlice++);
         if (buildSlice < SIZE) return;
         cover(HEIGHTS_BUILD);
         System.arraycopy(OCC_BUILD, 0, OCC, 0, OCC.length);
+        System.arraycopy(WALL_BUILD, 0, WALL, 0, WALL.length);
         System.arraycopy(HEIGHTS_BUILD, 0, HEIGHTS, 0, HEIGHTS.length);
         liveX = buildX;
         liveY = buildY;
@@ -115,35 +138,40 @@ public final class IndoorSunbeams {
 
     public static void changed(ClientLevel current, BlockPos pos) {
         if (current != level) return;
-        if (live && patch(OCC, HEIGHTS, liveX, liveY, liveZ, pos)) {
+        if (live && patch(OCC, WALL, HEIGHTS, liveX, liveY, liveZ, pos)) {
             cover(HEIGHTS);
             dirty = true;
         }
-        if (buildSlice >= 0 && pos.getZ() - buildZ < buildSlice) patch(OCC_BUILD, HEIGHTS_BUILD, buildX, buildY, buildZ, pos);
+        if (buildSlice >= 0 && pos.getZ() - buildZ < buildSlice) patch(OCC_BUILD, WALL_BUILD, HEIGHTS_BUILD, buildX, buildY, buildZ, pos);
     }
 
-    private static boolean patch(int[] occ, float[] heights, int ox, int oy, int oz, BlockPos pos) {
+    private static boolean patch(int[] occ, int[] wall, float[] heights, int ox, int oy, int oz, BlockPos pos) {
         int z = pos.getZ() - oz;
         int c = pos.getX() - ox + SIDE;
         if (z < 0 || z >= SIZE || c < 0 || c >= COLUMNS) return false;
         heights[(z * COLUMNS + c) * 2] = level.getHeight(Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ()) - oy;
         int x = c - SIDE;
-        if (x >= 0 && x < SIZE) occ[z * SIZE + x] = column(level, pos.getX(), oy, pos.getZ());
+        if (x >= 0 && x < SIZE) store(occ, wall, z * SIZE + x, column(level, pos.getX(), oy, pos.getZ()));
         return true;
     }
 
-    private static void slice(int[] occ, float[] heights, int ox, int oy, int oz, int z) {
+    private static void slice(int[] occ, int[] wall, float[] heights, int ox, int oy, int oz, int z) {
         int wz = oz + z;
         for (int c = 0; c < COLUMNS; c++) {
             heights[(z * COLUMNS + c) * 2] = level.getHeight(Heightmap.Types.MOTION_BLOCKING, ox - SIDE + c, wz) - oy;
         }
-        for (int x = 0; x < SIZE; x++) occ[z * SIZE + x] = column(level, ox + x, oy, wz);
+        for (int x = 0; x < SIZE; x++) store(occ, wall, z * SIZE + x, column(level, ox + x, oy, wz));
     }
 
-    private static int column(ClientLevel current, int wx, int oy, int wz) {
+    private static void store(int[] occ, int[] wall, int i, long bits) {
+        occ[i] = (int) bits;
+        wall[i] = (int) (bits >>> 32);
+    }
+
+    private static long column(ClientLevel current, int wx, int oy, int wz) {
         LevelChunk chunk = current.getChunkSource().getChunk(wx >> 4, wz >> 4, false);
-        if (chunk == null) return 0;
-        int bits = 0;
+        if (chunk == null) return 0L;
+        long bits = 0L;
         LevelChunkSection section = null;
         int sectionY = Integer.MIN_VALUE;
         for (int y = 0; y < SIZE; y++) {
@@ -154,9 +182,30 @@ public final class IndoorSunbeams {
                 section = chunk.getSection(chunk.getSectionIndex(wy));
             }
             if (section.hasOnlyAir()) continue;
-            if (solid(section.getBlockState(wx & 15, wy & 15, wz & 15))) bits |= 1 << y;
+            BlockState state = section.getBlockState(wx & 15, wy & 15, wz & 15);
+            if (solid(state)) bits |= 1L << y | 1L << y + 32;
+            else if (state.blocksMotion()) bits |= 1L << y + 32;
         }
         return bits;
+    }
+
+    private static float enclosure(Vec3 eye) {
+        float x = (float) (eye.x - liveX), y = (float) (eye.y - liveY), z = (float) (eye.z - liveZ);
+        int walls = 0, roof = blocked(x, y, z, 0F, 1F, 0F) ? 1 : 0;
+        for (int i = 0; i < 8; i++) {
+            if (blocked(x, y, z, RAY_X[i], 0F, RAY_Z[i])) walls++;
+            if (blocked(x, y, z, RAY_X[i] * 0.87F, 0.5F, RAY_Z[i] * 0.87F)) roof++;
+        }
+        return SkyGlow.smooth(0.55F, 0.8F, walls / 8F) * SkyGlow.smooth(0.55F, 0.8F, roof / 9F);
+    }
+
+    private static boolean blocked(float x, float y, float z, float dx, float dy, float dz) {
+        for (float t = 0.5F; t <= ROOM_REACH; t += 0.5F) {
+            int bx = Mth.floor(x + dx * t), by = Mth.floor(y + dy * t), bz = Mth.floor(z + dz * t);
+            if (bx < 0 || by < 0 || bz < 0 || bx >= SIZE || by >= SIZE || bz >= SIZE) return false;
+            if ((WALL[bz * SIZE + bx] >>> by & 1) != 0) return true;
+        }
+        return false;
     }
 
     private static boolean solid(BlockState state) {
@@ -221,7 +270,7 @@ public final class IndoorSunbeams {
         long now = Util.getNanos();
         float dt = indoorAt == 0L ? 1F : Math.min((now - indoorAt) / 1.0E9F, 1F);
         indoorAt = now;
-        indoor += ((covered(current, eye) ? 1F : 0F) - indoor) * (1F - (float) Math.exp(-dt * 2.5F));
+        indoor += (enclosed - indoor) * (1F - (float) Math.exp(-dt * 2.5F));
         float strength = SkyGlow.smooth(0.14F, 0.3F, sunY) * clear * clear * indoor;
         if (strength < 0.004F) {
             Diagnostics.skip(Diagnostics.INDOOR_SUNBEAMS, "night, rain or open sky");
@@ -243,6 +292,7 @@ public final class IndoorSunbeams {
         if (litStale || tick != litTick) {
             litTick = tick;
             litStale = false;
+            litFresh = true;
             buildLit(litProgram, k);
         }
 
@@ -251,24 +301,37 @@ public final class IndoorSunbeams {
         int height = Math.max(main.height / 4, 1);
         raw = SunPass.fit(raw, width, height, true);
         beam = SunPass.fit(beam, width, height, true);
-
-        airProgram.begin();
-        SkyProgram.texture(2, heightTexture);
-        SkyProgram.texture(1, litMap.getColorTextureId());
-        SkyProgram.texture(0, main.getDepthTextureId());
-        ViewCapture.INVERSE.get(MATRIX);
-        GL20.glUniformMatrix4fv(airProgram.uniform(0), false, MATRIX);
-        GL20.glUniform4f(airProgram.uniform(1), SLOPE[0], SLOPE[1], SLOPE[2], SLOPE[3]);
-        GL20.glUniform4f(airProgram.uniform(2), cx, cy, cz, REACH);
-        GL20.glUniform4f(airProgram.uniform(3), sunX, sunY, 0F, 0.7F);
-        raw.bindWrite(true);
-        airProgram.draw(3);
-        airProgram.end();
-        soften.begin();
-        SkyProgram.texture(0, raw.getColorTextureId());
-        beam.bindWrite(true);
-        soften.draw(3);
-        soften.end();
+        double dx = eye.x - freshX, dy = eye.y - freshY, dz = eye.z - freshZ;
+        boolean reuse = !Cadence.due(freshAge, Cadence.interval() / 4) && freshWidth == width && !litFresh
+                && dx * dx + dy * dy + dz * dz < 4.0;
+        litFresh = false;
+        if (reuse) {
+            freshAge++;
+        } else {
+            airProgram.begin();
+            SkyProgram.texture(2, heightTexture);
+            SkyProgram.texture(1, litMap.getColorTextureId());
+            SkyProgram.texture(0, main.getDepthTextureId());
+            ViewCapture.INVERSE.get(MATRIX);
+            GL20.glUniformMatrix4fv(airProgram.uniform(0), false, MATRIX);
+            GL20.glUniform4f(airProgram.uniform(1), SLOPE[0], SLOPE[1], SLOPE[2], SLOPE[3]);
+            GL20.glUniform4f(airProgram.uniform(2), cx, cy, cz, REACH);
+            GL20.glUniform4f(airProgram.uniform(3), sunX, sunY, 0F, 0.7F);
+            raw.bindWrite(true);
+            airProgram.draw(3);
+            airProgram.end();
+            soften.begin();
+            SkyProgram.texture(0, raw.getColorTextureId());
+            beam.bindWrite(true);
+            soften.draw(3);
+            soften.end();
+            FRESH_VIEW_PROJECTION.set(ViewCapture.VIEW_PROJECTION);
+            freshX = eye.x;
+            freshY = eye.y;
+            freshZ = eye.z;
+            freshAge = 0;
+            freshWidth = width;
+        }
 
         float warm = SkyGlow.smooth(0.1F, 0.7F, sunY);
         float red = 1F, green = Mth.lerp(warm, 0.6F, 0.9F), blue = Mth.lerp(warm, 0.3F, 0.72F);
@@ -280,7 +343,13 @@ public final class IndoorSunbeams {
         SkyProgram.texture(2, litMap.getColorTextureId());
         SkyProgram.texture(1, main.getDepthTextureId());
         SkyProgram.texture(0, beam.getColorTextureId());
+        ViewCapture.INVERSE.get(MATRIX);
         GL20.glUniformMatrix4fv(mixProgram.uniform(0), false, MATRIX);
+        GL20.glUniform1f(mixProgram.uniform(6), reuse ? 1F : 0F);
+        if (reuse) {
+            REPROJECT.set(FRESH_VIEW_PROJECTION).translate((float) dx, (float) dy, (float) dz).mul(ViewCapture.INVERSE).get(MATRIX);
+            GL20.glUniformMatrix4fv(mixProgram.uniform(5), false, MATRIX);
+        }
         GL20.glUniform4f(mixProgram.uniform(1), SLOPE[0], SLOPE[1], SLOPE[2], SLOPE[3]);
         GL20.glUniform4f(mixProgram.uniform(2), cx, cy, cz, REACH);
         GL20.glUniform4f(mixProgram.uniform(3), red, green, blue, 0.4F * strength);
@@ -301,7 +370,7 @@ public final class IndoorSunbeams {
         GL20.glUniformMatrix4fv(dustProgram.uniform(0), false, MATRIX);
         GL20.glUniform4f(dustProgram.uniform(1), SLOPE[0], SLOPE[1], SLOPE[2], SLOPE[3]);
         GL20.glUniform4f(dustProgram.uniform(2), cx, cy, cz, REACH);
-        GL20.glUniform4f(dustProgram.uniform(3), tx, ty, tz, (Util.getMillis() % 3_600_000L) / 1000F);
+        GL20.glUniform4f(dustProgram.uniform(3), tx, ty, tz, (float) (Tempo.seconds() % 3600.0));
         GL20.glUniform3f(dustProgram.uniform(4), -left.x(), -left.y(), -left.z());
         GL20.glUniform3f(dustProgram.uniform(5), up.x(), up.y(), up.z());
         GL20.glUniform4f(dustProgram.uniform(6), red, Math.min(green + 0.05F, 1F), Math.min(blue + 0.08F, 1F), 0.9F * strength);
@@ -367,7 +436,7 @@ public final class IndoorSunbeams {
     }
 
     private static void drift(long now) {
-        float dt = driftAt == 0L ? 0F : Mth.clamp((now - driftAt) / 1.0E9F, 0F, 0.1F);
+        float dt = driftAt == 0L ? 0F : Mth.clamp((now - driftAt) / 1.0E9F, 0F, 0.1F) * Tempo.rate();
         driftAt = now;
         driftX += 0.05 * dt;
         driftY -= 0.02 * dt;

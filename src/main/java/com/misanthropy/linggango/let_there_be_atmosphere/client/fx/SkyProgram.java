@@ -36,6 +36,8 @@ public final class SkyProgram {
     static final SkyProgram RAINBOW = new SkyProgram("sky_rainbow", new String[0], "Transform", "Sun");
     static final SkyProgram SUN_MASK = new SkyProgram("sun_mask", new String[]{"DepthSampler", "CloudSampler", "NoiseSampler", "HeightSampler", "CoverSampler"},
             "InverseTransform", "Cloud", "Sun", "Ray", "Mist", "MistDrift", "Ground", "GroundOrigin", "Puddle", "HeightCenter", "CloudGrid", "Cover", "Wet", "Occlusion", "ViewProjection", "SunShadow");
+    static final SkyProgram SUN_REPROJECT = new SkyProgram("sun_reproject", new String[]{"DepthSampler", "MaskSampler"},
+            "InverseTransform", "Reproject", "Delta");
     static final SkyProgram CAVE_MOTES = new SkyProgram("cave_motes", new String[]{"Sampler0", "Sampler1", "DataSampler"},
             "Transform", "Right", "Up", "Offset", "Clock", "MoteFog", "Sprites");
     static final SkyProgram LITTER = new SkyProgram("litter", new String[]{"Sampler0", "Sampler1", "DataSampler"},
@@ -72,11 +74,12 @@ public final class SkyProgram {
             "Transform", "Offset", "Clock", "Sun", "Screen");
     static final SkyProgram WATER_SHEEN = new SkyProgram("water_sheen", new String[]{"DepthSampler"},
             "InverseTransform", "Surface", "Horizon", "Zenith");
-    static final SkyProgram WATER_REFLECT = new SkyProgram("water_reflect", new String[]{"SceneSampler", "DepthSampler", "SolidSampler", "NoiseSampler", "NearSampler"},
-            "InverseTransform", "ViewProjection", "Surface", "Waves", "Horizon", "Zenith");
-    static final SkyProgram WATER_REFLECT_MIX = new SkyProgram("water_reflect_mix", new String[]{"ReflectSampler", "SceneSampler", "BaseSampler", "DepthSampler", "SolidSampler"},
-            "InverseTransform", "Spread");
-    static final SkyProgram WATER_REFLECT_NEAR = new SkyProgram("water_reflect_near", new String[]{"SolidSampler"});
+    static final SkyProgram WATER_REFLECT = new SkyProgram("water_reflect", new String[]{"SceneSampler", "DepthSampler", "SolidSampler", "NoiseSampler", "NearSampler", "MaskSampler"},
+            "InverseTransform", "ViewProjection", "Surface", "Waves", "Horizon", "Zenith", "Masked");
+    static final SkyProgram WATER_REFLECT_MIX = new SkyProgram("water_reflect_mix", new String[]{"ReflectSampler", "SceneSampler", "BaseSampler", "DepthSampler", "SolidSampler", "MaskSampler"},
+            "InverseTransform", "Spread", "Masked", "ReflectReproject", "Reused");
+    static final SkyProgram WATER_COPY = new SkyProgram("water_copy", new String[]{"SceneSampler", "MaskSampler"});
+    static final SkyProgram WATER_REFLECT_NEAR = new SkyProgram("water_reflect_near", new String[]{"SolidSampler", "DepthSampler"}, "Masked", "Gather");
     static final SkyProgram CAUSTICS = new SkyProgram("water_caustics", new String[]{"DepthSampler", "NoiseSampler"},
             "InverseTransform", "Surface", "Light");
     static final SkyProgram WATER_RAYS = new SkyProgram("water_rays", new String[]{"DepthSampler", "NoiseSampler"},
@@ -87,7 +90,7 @@ public final class SkyProgram {
     static final SkyProgram SUNBEAM_AIR = new SkyProgram("sunbeam_air", new String[]{"DepthSampler", "LitSampler", "HeightSampler"},
             "InverseTransform", "Slope", "Camera", "Sun");
     static final SkyProgram SUNBEAM_MIX = new SkyProgram("sunbeam_mix", new String[]{"BeamSampler", "DepthSampler", "LitSampler", "HeightSampler"},
-            "InverseTransform", "Slope", "Camera", "Tint", "Patch");
+            "InverseTransform", "Slope", "Camera", "Tint", "Patch", "BeamReproject", "BeamReused");
     static final SkyProgram SUNBEAM_DUST = new SkyProgram("sunbeam_dust", new String[]{"LitSampler", "HeightSampler"},
             "Transform", "Slope", "Camera", "Anchor", "Right", "Up", "Tint");
     static final SkyProgram STARS = new SkyProgram("sky_stars", new String[]{"NoiseSampler"}, "Transform", "Field", "Screen", "Band");

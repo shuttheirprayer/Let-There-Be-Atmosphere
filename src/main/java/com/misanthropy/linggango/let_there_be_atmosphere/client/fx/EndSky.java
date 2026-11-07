@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -88,7 +89,7 @@ public final class EndSky {
             Diagnostics.skip(Diagnostics.END_SKY, "off, not the End, or the sky is hidden");
             return;
         }
-        float seconds = (Util.getMillis() % 3_600_000L) / 1000F;
+        float seconds = (float) (Tempo.seconds() % 3600.0);
         SPIN.rotationAxis(seconds / 3600F * Mth.TWO_PI, 0.17F, 0.98F, 0.11F);
         TURN.rotation(SPIN).get(SPIN_MATRIX);
         MATRIX.set(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix())

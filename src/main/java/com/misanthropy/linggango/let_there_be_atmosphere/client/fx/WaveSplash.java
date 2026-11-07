@@ -1,10 +1,10 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -37,7 +37,7 @@ public final class WaveSplash {
     private static final Vector3f RIGHT = new Vector3f();
     private static final Vector3f UP = new Vector3f();
     private static final RandomSource RANDOM = RandomSource.create();
-    private static final long BASE = Util.getNanos();
+    private static final double BASE = Tempo.seconds();
 
     private static int crownTex, dropTex;
     private static boolean dirty = true;
@@ -45,7 +45,7 @@ public final class WaveSplash {
     private static float newest = -100F;
 
     private static float now() {
-        return ((Util.getNanos() - BASE) / 1.0E9F) % 3600F;
+        return (float) (Tempo.seconds() - BASE) % 3600F;
     }
 
     static void reset() {

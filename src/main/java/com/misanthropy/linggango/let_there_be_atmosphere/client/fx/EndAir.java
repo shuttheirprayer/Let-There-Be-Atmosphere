@@ -2,13 +2,13 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
@@ -84,7 +84,7 @@ public final class EndAir {
         if (SkyGate.air(event, Diagnostics.END_AIR) == null) return;
 
         Vec3 camera = event.getCamera().getPosition();
-        double seconds = (Util.getMillis() % 3_600_000L) / 1000.0;
+        double seconds = Tempo.seconds() % 3600.0;
         float mist = BiomeFx.on(FxConfig.endMist, BiomeFx.END_MIST) ? (float) BiomeFx.amount(FxConfig.endMistAmount, BiomeFx.END_MIST) : 0F;
         float shadow = FxConfig.endShadows ? (float) FxConfig.endShadowAmount : 0F;
         float presence = Mth.clamp(smooth(0.55F, 0.9F, 0.5F + 0.5F * (float) Math.sin(seconds * 0.05 + 1.2)) * shadow, 0F, 1.5F);

@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -105,7 +106,7 @@ public final class DeepWater {
             return;
         }
         float snow = FxConfig.marineSnow ? (float) FxConfig.marineSnowAmount * SkyGlow.smooth(3F, 14F, depth) : 0F;
-        if (snow > 0F && CaveMotes.resolve()) snow(level, eye, snow);
+        if (snow > 0F && Tempo.due() && CaveMotes.resolve()) snow(level, eye, snow);
         if (FxConfig.deepSounds && FxConfig.deepSoundsVolume > 0.0 && depth > 20F && --wait <= 0) {
             groan(level, eye);
             wait = 800 + RANDOM.nextInt(1600);

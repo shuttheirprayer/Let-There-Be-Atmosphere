@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -112,7 +113,7 @@ public final class Haze {
     static float coldAmp() { return cold * COLD_PIXELS / 1080F; }
 
     static float seconds() {
-        return (Util.getMillis() % 1_000_000L) / 1000F;
+        return (float) (Tempo.seconds() % 1000.0);
     }
 
     private static float lavaNearness(ClientLevel level, BlockPos feet) {

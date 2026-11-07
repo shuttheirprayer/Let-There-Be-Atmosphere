@@ -1,5 +1,6 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -32,20 +33,13 @@ public final class Wind {
     private static float shelterTarget = 1F;
     private static int shelterAge;
 
-    private static double clock;
-    private static long clockAt;
 
     public static float seconds(ClientLevel level, float partialTick) {
         return (float) (time() % 50000.0);
     }
 
     public static double time() {
-        long now = Util.getNanos();
-        if (now != clockAt) {
-            if (clockAt != 0L && !Minecraft.getInstance().isPaused()) clock += Math.min((now - clockAt) * 1.0E-9, 0.25);
-            clockAt = now;
-        }
-        return clock;
+        return Tempo.seconds();
     }
 
     private static float modelAt = Float.NaN;

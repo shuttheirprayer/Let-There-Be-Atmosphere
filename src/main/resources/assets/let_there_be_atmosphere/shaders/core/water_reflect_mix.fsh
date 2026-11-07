@@ -5,8 +5,12 @@ uniform sampler2D SceneSampler;
 uniform sampler2D BaseSampler;
 uniform sampler2D DepthSampler;
 uniform sampler2D SolidSampler;
+uniform sampler2D MaskSampler;
+uniform float Masked;
 uniform mat4 InverseTransform;
 uniform vec4 Spread;
+uniform mat4 ReflectReproject;
+uniform float Reused;
 
 in vec2 texCoord;
 
@@ -19,10 +23,19 @@ vec3 unproject(vec2 ndc, float depth) {
 
 void main() {
     ivec2 px = ivec2(gl_FragCoord.xy);
+    if (Masked > 0.5 && texelFetch(MaskSampler, px / 2, 0).r < 0.5) discard;
     float depth = texelFetch(DepthSampler, px, 0).r;
     if (depth >= 1.0 || depth >= texelFetch(SolidSampler, px, 0).r) discard;
     ivec2 reflectSize = textureSize(ReflectSampler, 0);
     vec2 halfPos = (vec2(px) + 0.5) * 0.5 - 0.5;
+    ivec2 tapPx = px;
+    if (Reused > 0.5) {
+        vec4 then = ReflectReproject * vec4(texCoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+        if (then.w > 0.0) {
+            halfPos = (then.xy / then.w * 0.5 + 0.5) * vec2(reflectSize) - 0.5;
+            tapPx = ivec2(floor(halfPos * 2.0 + 1.0));
+        }
+    }
     ivec2 cell = ivec2(floor(halfPos));
     vec2 f = halfPos - vec2(cell);
     vec3 gathered = vec3(0.0);
@@ -56,7 +69,7 @@ void main() {
             if (step == 0) continue;
             float g = exp(-float(i * i) / 4.5);
             for (int side = -1; side <= 1; side += 2) {
-                vec4 tap = texelFetch(ReflectSampler, ivec2(px.x / 2, clamp((px.y + side * step) / 2, 0, top)), 0);
+                vec4 tap = texelFetch(ReflectSampler, ivec2(clamp(tapPx.x / 2, 0, reflectSize.x - 1), clamp((tapPx.y + side * step) / 2, 0, top)), 0);
                 if (tap.a <= 0.0) continue;
                 colour += tap.rgb * tap.a * g;
                 weight += tap.a * g;

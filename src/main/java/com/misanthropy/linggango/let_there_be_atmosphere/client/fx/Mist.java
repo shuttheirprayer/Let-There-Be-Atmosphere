@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import java.util.Arrays;
@@ -123,7 +124,7 @@ public final class Mist {
             floor = Float.isNaN(floor) ? floorTarget : floor + (floorTarget - floor) * (1F - (float) Math.exp(-dt * 0.3F));
         }
         float seconds = Wind.seconds(level, partialTick);
-        float speed = 1.2F * Wind.gust(seconds) * dt;
+        float speed = 1.2F * Wind.gust(seconds) * dt * Tempo.rate();
         driftX += Wind.x(seconds) * speed;
         driftZ += Wind.z(seconds) * speed;
 

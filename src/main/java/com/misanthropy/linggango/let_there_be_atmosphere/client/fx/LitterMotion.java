@@ -79,7 +79,7 @@ final class LitterMotion {
         return i < SM ? Litter.SOLID_MOVE_BASE + i : Litter.FLAT_MOVE_BASE + (i - SM);
     }
 
-    static void tick(LocalPlayer player, float now) {
+    static void tick(LocalPlayer player, float now, boolean due) {
         ClientLevel level = Litter.level;
         playerX = player.getX();
         playerZ = player.getZ();
@@ -95,7 +95,7 @@ final class LitterMotion {
             pulse = Mth.clamp(s - 0.45F, 0F, 0.55F) / 0.55F;
         }
         for (Entity entity : level.entitiesForRendering()) {
-            if (!(entity instanceof LivingEntity) && !(entity instanceof Boat)) continue;
+            if (!(entity instanceof LivingEntity) && !(entity instanceof Boat) || !due && entity != player && entity != player.getVehicle()) continue;
             double dx = entity.getX() - entity.xo, dz = entity.getZ() - entity.zo;
             double d2 = dx * dx + dz * dz;
             if (d2 < 0.0012 || d2 > 1.0 || entity.isSpectator() || entity.isPassenger()) continue;
@@ -103,6 +103,7 @@ final class LitterMotion {
             if (px * px + pz * pz > 576.0 || !entity.onGround()) continue;
             push(entity, (float) dx, (float) dz, (float) Math.sqrt(d2), now);
         }
+        if (!due) return;
         if (storm && pulse > 0.2F) stirWind(player, wx, wz, pulse * windPower);
         if (rain > 0.4F) stirRain(player, wx, wz, rain, windPower);
         for (int i = 0; i < N; i++) {

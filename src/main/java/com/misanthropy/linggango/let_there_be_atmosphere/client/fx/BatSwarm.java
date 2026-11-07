@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -9,7 +10,6 @@ import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.io.InputStream;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -64,7 +64,7 @@ public final class BatSwarm {
     private static long rolledDay = -1L;
     private static int armedAt;
     private static int ticks;
-    private static long startNanos;
+    private static double startAt;
     private static float total;
     private static int anchorX, anchorY, anchorZ;
     private static int mouthX, mouthY, mouthZ, mouthDx, mouthDz;
@@ -74,7 +74,7 @@ public final class BatSwarm {
     }
 
     private static float elapsed() {
-        return (Util.getNanos() - startNanos) / 1.0E9F;
+        return (float) (Tempo.seconds() - startAt);
     }
 
     public static void onBatSwarmTick(TickEvent.ClientTickEvent event) {
@@ -225,7 +225,7 @@ public final class BatSwarm {
             life = Math.max(life, birth + lifespan);
         }
         total = life;
-        startNanos = Util.getNanos();
+        startAt = Tempo.seconds();
         live = true;
         dirty = true;
     }

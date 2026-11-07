@@ -2,8 +2,8 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
@@ -62,7 +62,7 @@ public final class Lightning {
     static boolean sheet(float x, float y, float z, float amp, int count) {
         Minecraft mc = Minecraft.getInstance();
         if (!FxConfig.lightningFlash || FxConfig.lightningFlashStrength <= 0.0 || mc.options.hideLightningFlash().get()) return false;
-        if (Util.getNanos() - last < QUIET / 3) return false;
+        if ((long) (Tempo.seconds() * 1.0E9) - last < QUIET / 3) return false;
         dirX = x;
         dirY = Math.max(y, 0.08F);
         dirZ = z;
@@ -71,7 +71,7 @@ public final class Lightning {
     }
 
     private static void strokes(float amp, int count) {
-        long at = Util.getNanos();
+        long at = (long) (Tempo.seconds() * 1.0E9);
         for (int i = 0; i < count; i++) {
             AT[next] = at;
             AMP[next] = amp * (i == 0 ? 1F : 0.45F + RANDOM.nextFloat() * 0.5F);
@@ -94,7 +94,7 @@ public final class Lightning {
     }
 
     public static float flash() {
-        long now = Util.getNanos();
+        long now = (long) (Tempo.seconds() * 1.0E9);
         if (now - last > QUIET) return 0F;
         if (now == cachedAt) return cached;
         float sum = 0F;

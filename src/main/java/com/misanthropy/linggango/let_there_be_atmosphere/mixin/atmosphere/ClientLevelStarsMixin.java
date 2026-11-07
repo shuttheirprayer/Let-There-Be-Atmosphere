@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.mixin.atmosphere;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.DayCurves;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -26,7 +27,7 @@ public abstract class ClientLevelStarsMixin {
         float twinkle    = isDay ? (float) DynamicFogHandler.dayStarTwinkle    : (float) DynamicFogHandler.starTwinkle;
         float baseBrightness = isDay ? 1.0F : base;
         if (twinkle > 0f) {
-            float t = (level.getGameTime() % 24000L + partialTick) * 0.07f;
+            float t = (float) (Tempo.ticks(partialTick) % 24000.0) * 0.07f;
             baseBrightness *= 1.0f + Mth.sin(t) * twinkle * 0.4f;
         }
 

@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -13,7 +14,6 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -73,7 +73,7 @@ public final class Birds {
     private static final Matrix4f MATRIX = new Matrix4f();
     private static final FloatBuffer TRANSFORM = BufferUtils.createFloatBuffer(16);
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int data;
     private static int sheet;
     private static boolean dirty = true;
@@ -87,7 +87,7 @@ public final class Birds {
     private static int ticks;
 
     private static float now() {
-        return (Util.getNanos() - base) / 1.0E9F;
+        return (float) (Tempo.seconds() - base);
     }
 
     public static void onBirdTick(TickEvent.ClientTickEvent event) {
@@ -294,7 +294,7 @@ public final class Birds {
         for (int i = 0; i < SLOTS; i++) ROW[0][i * 4 + 3] -= time;
         for (double[] r : ROOST) r[4] -= time;
         lastDeath -= time;
-        base = Util.getNanos();
+        base = Tempo.seconds();
         dirty = true;
     }
 

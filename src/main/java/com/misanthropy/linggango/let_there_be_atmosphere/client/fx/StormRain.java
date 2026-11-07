@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -50,6 +51,10 @@ public final class StormRain {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || !hidesVanilla()) {
             Diagnostics.skip(Diagnostics.RAIN, FxConfig.stormRain ? "heights not ready, or a shader pack owns the image" : "disabled");
+            return;
+        }
+        if (Tempo.rainHeld()) {
+            Diagnostics.skip(Diagnostics.RAIN, "held in the air by another mod");
             return;
         }
         float partialTick = event.getPartialTick();

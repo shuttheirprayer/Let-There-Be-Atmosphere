@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -85,7 +86,7 @@ public final class StormSky {
             return;
         }
         long now = Util.getNanos();
-        float dt = drawnAt == 0L ? 0F : Math.min((now - drawnAt) / 1.0E9F, 0.25F);
+        float dt = drawnAt == 0L ? 0F : Math.min((now - drawnAt) / 1.0E9F, 0.25F) * Tempo.rate();
         drawnAt = now;
         float seconds = Wind.seconds(level, partialTick);
         float angle = Wind.angle(seconds);

@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -68,6 +69,7 @@ public final class Puddles {
 
         SkyHeights.tick(level, player.getBlockX(), player.getBlockZ());
         heightsLive = true;
+        if (!Tempo.due()) return;
 
         CURSOR.set(player.getBlockX(), player.getBlockY(), player.getBlockZ());
         boolean rainHere = level.getBiome(CURSOR).value().getPrecipitationAt(CURSOR) == Biome.Precipitation.RAIN;
@@ -80,7 +82,7 @@ public final class Puddles {
             damp = Math.max(0F, damp - 1F / 4800F);
         }
 
-        if (FxConfig.rainSplashes && raining > 0.05F && !StormRain.hidesVanilla()) splash(level, player, level.random);
+        if (FxConfig.rainSplashes && raining > 0.05F && !StormRain.hidesVanilla() && !Tempo.rainHeld()) splash(level, player, level.random);
     }
 
     private static void splash(ClientLevel level, LocalPlayer player, RandomSource random) {

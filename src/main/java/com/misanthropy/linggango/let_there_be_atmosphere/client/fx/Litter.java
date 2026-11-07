@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -16,7 +17,6 @@ import java.nio.FloatBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -109,7 +109,7 @@ public final class Litter {
     private static final BlockPos.MutableBlockPos CELL = new BlockPos.MutableBlockPos();
     private static final Matrix4f MATRIX = new Matrix4f();
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int data;
     private static int models = -1;
     private static float atlasStamp = Float.NaN;
@@ -135,7 +135,7 @@ public final class Litter {
     }
 
     static float now() {
-        return (Util.getNanos() - base) / 1.0E9F;
+        return (float) (Tempo.seconds() - base);
     }
 
     private static boolean groundOn() {
@@ -178,15 +178,18 @@ public final class Litter {
         } else if (grounded > 0) {
             clearGround();
         }
+        boolean due = Tempo.due();
         if (leavesOn()) {
-            leafTick(player, now);
-            FallingLeaves.tick(player, now);
+            if (due) {
+                leafTick(player, now);
+                FallingLeaves.tick(player, now);
+            }
         } else if (FallingLeaves.count() > 0) {
             FallingLeaves.reset();
             java.util.Arrays.fill(ROW[1], LEAF_BASE * 4, (LEAF_BASE + LEAVES) * 4, 0F);
             markDirty(LEAF_BASE, LEAF_BASE + LEAVES);
         }
-        if (groundOn()) LitterMotion.tick(player, now);
+        if (groundOn()) LitterMotion.tick(player, now, due);
         Diagnostics.mark(Diagnostics.LITTER, Diagnostics.detail() ? grounded + " on the ground, " + LitterMotion.count() + " moving, " + FallingLeaves.count() + " leaves" : null);
     }
 
@@ -214,7 +217,7 @@ public final class Litter {
 
     private static void rebase(float now) {
         for (int i = 0; i < SLOTS; i++) ROW[0][i * 4 + 3] = Math.max(ROW[0][i * 4 + 3] - now, -1000F);
-        base = Util.getNanos();
+        base = Tempo.seconds();
         markDirty(0, SLOTS);
     }
 

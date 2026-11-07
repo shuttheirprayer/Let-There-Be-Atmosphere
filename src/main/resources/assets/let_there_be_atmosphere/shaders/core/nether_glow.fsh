@@ -11,5 +11,7 @@ out vec4 fragColor;
 
 void main() {
     vec3 glow = texture(GlowSampler, texCoord).rgb;
-    fragColor = vec4(min(ShaftColor.rgb * glow.r + MistColor.rgb * glow.g + StormColor.rgb * glow.b, vec3(1.0)), 1.0);
+    vec3 colour = min(ShaftColor.rgb * glow.r + MistColor.rgb * glow.g + StormColor.rgb * glow.b, vec3(1.0));
+    if (all(lessThanEqual(colour, vec3(0.0)))) discard;
+    fragColor = vec4(colour, 1.0);
 }

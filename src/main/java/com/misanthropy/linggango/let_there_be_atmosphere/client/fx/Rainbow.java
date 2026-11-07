@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -85,7 +86,7 @@ public final class Rainbow {
         if (level == null) return;
 
         float partialTick = event.getPartialTick();
-        float t = age + partialTick;
+        float t = age + Tempo.partial(partialTick);
         float envelope = Math.min(t / FADE_IN, 1F) * Math.min((LIFE - t) / FADE_OUT, 1F);
         float angle = level.getTimeOfDay(partialTick) * Mth.TWO_PI;
         float sunY = Mth.cos(angle);

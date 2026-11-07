@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -111,7 +112,7 @@ public final class AuroraRenderer {
         if (level == null) return;
 
         float partialTick = event.getPartialTick();
-        float n = Aurora.north(partialTick);
+        float n = Aurora.north(Tempo.partial(partialTick));
         float strength = Aurora.strength(nightAmount(level.getDayTime() % DayCurves.PERIOD + partialTick), n,
                 level.getRainLevel(partialTick), DynamicFogHandler.skyVisibility(),
                 FxConfig.auroraFrequency, FxConfig.auroraBrightness);
@@ -128,7 +129,7 @@ public final class AuroraRenderer {
                 .scale(SKY_SCALE)
                 .translate(0F, (float) (lift * LIFT - (eyeY - SEA_LEVEL)), (float) (reach * DISTANCE_FACTOR));
 
-        draw(n, poleDistance, strength, partialTick);
+        draw(n, poleDistance, strength, Tempo.partial(partialTick));
         Diagnostics.mark(Diagnostics.AURORA, Diagnostics.detail()
                 ? String.format("%d bands, strength %.2f, north %.2f", Aurora.bands(), strength, n) : null);
     }

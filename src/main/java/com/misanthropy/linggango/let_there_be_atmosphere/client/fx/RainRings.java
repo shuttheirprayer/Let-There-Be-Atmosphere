@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import me.jellysquid.mods.sodium.client.gl.shader.ShaderLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -116,7 +117,7 @@ public final class RainRings {
         WindSway.update();
         RAIN[0] = WindSway.CAMERA[0];
         RAIN[1] = WindSway.CAMERA[2];
-        RAIN[2] = WindSway.WIND[0];
+        if (!Tempo.rainHeld()) RAIN[2] = WindSway.WIND[0];
         RAIN[3] = 0F;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;

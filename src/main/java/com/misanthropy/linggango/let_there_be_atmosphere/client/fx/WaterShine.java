@@ -2,12 +2,12 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
-import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -54,7 +54,7 @@ public final class WaterShine {
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final RandomSource RANDOM = RandomSource.create();
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int data;
     private static boolean dirty = true;
     private static boolean anchored;
@@ -137,7 +137,7 @@ public final class WaterShine {
     }
 
     private static float now() {
-        return ((Util.getNanos() - base) / 1.0E9F) % 3600F;
+        return (float) (Tempo.seconds() - base) % 3600F;
     }
 
     private static boolean sparkles() {

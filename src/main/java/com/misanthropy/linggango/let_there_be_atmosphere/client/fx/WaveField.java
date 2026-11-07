@@ -1,5 +1,6 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
@@ -51,6 +52,7 @@ final class WaveField {
         float[] f1 = new float[DIM * DIM];
         float[] f2 = new float[DIM * DIM];
         final float[] disp = new float[DIM * DIM];
+        final float[] last = new float[DIM * DIM];
         int tx, tz, by, slot, tint, quiet;
         float peak;
         boolean dirty;
@@ -61,6 +63,7 @@ final class WaveField {
             java.util.Arrays.fill(f1, 0F);
             java.util.Arrays.fill(f2, 0F);
             java.util.Arrays.fill(disp, 0F);
+            java.util.Arrays.fill(last, 0F);
             for (int i = 0; i < 9; i++) nb[i] = null;
             quiet = 0;
             peak = 0F;
@@ -354,6 +357,7 @@ final class WaveField {
             t.f0 = t.f2;
             t.f2 = spare;
             float[] a = t.f0, b = t.f1, c = t.f2, d = t.disp;
+            System.arraycopy(d, 0, t.last, 0, d.length);
             for (int z = 1; z <= CELLS; z++) {
                 int row = z * DIM;
                 for (int x = row + 1; x <= row + CELLS; x++) d[x] = (a[x] + b[x] + c[x]) * (1F / 3F);
@@ -395,7 +399,7 @@ final class WaveField {
         if (east > SPREAD && t.nb[5] == null) obtain(t.tx + 1, t.tz, t.by);
     }
 
-    private static void upload() {
+    private static void upload(float partial) {
         if (heightTex == 0) {
             heightTex = GlStateManager._genTexture();
             GlStateManager._bindTexture(heightTex);
@@ -420,16 +424,22 @@ final class WaveField {
             metaDirty = false;
         }
         boolean bound = false;
+        boolean blend = Tempo.slowed();
         for (int i = 0, n = LIST.size(); i < n; i++) {
             Tile t = LIST.get(i);
-            if (!t.dirty) continue;
+            if (!t.dirty && !blend) continue;
             if (!bound) {
                 GlStateManager._bindTexture(heightTex);
                 SkyHeights.unpack();
                 bound = true;
             }
             HEIGHT_UPLOAD.clear();
-            HEIGHT_UPLOAD.put(t.disp).flip();
+            if (blend) {
+                for (int k = 0; k < t.disp.length; k++) HEIGHT_UPLOAD.put(t.last[k] + (t.disp[k] - t.last[k]) * partial);
+            } else {
+                HEIGHT_UPLOAD.put(t.disp);
+            }
+            HEIGHT_UPLOAD.flip();
             GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, (t.slot % COLS) * DIM, (t.slot / COLS) * DIM, DIM, DIM, GL11.GL_RED, GL11.GL_FLOAT, HEIGHT_UPLOAD);
             t.dirty = false;
         }
@@ -439,7 +449,7 @@ final class WaveField {
         if (!ready() || LIST.isEmpty() || LightTint.lightmap == null) return;
         SkyProgram program = SkyProgram.RIPPLES;
         if (!program.ready()) return;
-        upload();
+        upload(Tempo.partial(event.getPartialTick()));
         Vec3 eye = event.getCamera().getPosition();
         float ox = (float) (anchorX - eye.x);
         float oy = (float) (anchorY - eye.y);

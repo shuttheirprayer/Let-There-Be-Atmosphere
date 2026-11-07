@@ -3,6 +3,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
@@ -100,7 +101,7 @@ public final class LensDrops {
         RenderTarget main = mc.getMainRenderTarget();
         aspect = main.height > 0 ? (float) main.width / main.height : 1F;
         long now = Util.getNanos();
-        float dt = last == 0L ? 0F : Math.min((now - last) / 1.0E9F, 0.1F);
+        float dt = last == 0L ? 0F : Math.min((now - last) / 1.0E9F, 0.1F) * Tempo.rate();
         last = now;
         if (!mc.isPaused()) step(mc, level, player, dt, rainy, soak);
         if (count == 0) {
@@ -127,7 +128,7 @@ public final class LensDrops {
         boolean wet = falling || soaked;
         float up = -camera.getXRot();
         float look = up >= 0F ? 0.12F + 0.88F * (float) Math.pow(Math.min(up / 90F, 1F), 0.8) : Math.max(0F, 0.12F * (1F + up / 18F));
-        if (falling) carry = Math.min(carry + RATE * rain * look * (float) FxConfig.lensDropsAmount * dt, 4F);
+        if (falling && !Tempo.rainHeld()) carry = Math.min(carry + RATE * rain * look * (float) FxConfig.lensDropsAmount * dt, 4F);
         while (carry >= 1F) {
             carry -= 1F;
             spawn();

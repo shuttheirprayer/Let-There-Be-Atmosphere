@@ -19,6 +19,8 @@ uniform vec4 PuddleColor;
 uniform vec4 View;
 uniform vec4 ViewTan;
 uniform vec4 Flare;
+uniform mat4 BloomReproject;
+uniform float BloomReused;
 
 in vec2 texCoord;
 flat in float seen;
@@ -86,7 +88,12 @@ void main() {
     }
     if (MistColor.w > 0.5 && !hand) color = mix(color, MistColor.rgb, sun.b * (1.0 - sky));
     float noise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-    vec3 glow = texture(BloomSampler, texCoord).rgb * (hand ? 0.35 : 1.0);
+    vec2 bloomCoord = texCoord;
+    if (BloomReused > 0.5) {
+        vec4 then = BloomReproject * vec4(texCoord * 2.0 - 1.0, 1.0, 1.0);
+        if (then.w > 0.0) bloomCoord = then.xy / then.w * 0.5 + 0.5;
+    }
+    vec3 glow = texture(BloomSampler, bloomCoord).rgb * (hand ? 0.35 : 1.0);
     glow = max(mix(vec3(dot(glow, vec3(0.2126, 0.7152, 0.0722))), glow, 1.4) * BloomStrength + noise * BloomStrength / 255.0, 0.0);
     color = 1.0 - (1.0 - color) * (1.0 - min(glow, 1.0));
     if (Rays.r + Rays.g + Rays.b > 0.0) {

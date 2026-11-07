@@ -3,6 +3,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -90,7 +91,7 @@ public final class Puffs {
     private static final Map<Integer, Walker> WALKERS = new HashMap<>();
     private static final float[] TINT = new float[3];
 
-    private static final long BASE = Util.getNanos();
+    private static final double BASE = Tempo.seconds();
     private static long simClock = Util.getNanos();
     private static float pushX, pushZ;
     private static int alive;
@@ -108,7 +109,7 @@ public final class Puffs {
     }
 
     private static float now() {
-        return (Util.getNanos() - BASE) / 1.0E9F;
+        return (float) (Tempo.seconds() - BASE);
     }
 
     private static boolean allowed(ClientLevel level) {
@@ -128,7 +129,8 @@ public final class Puffs {
             return;
         }
         if (mc.isPaused()) return;
-        ticks++;
+        boolean due = Tempo.due();
+        if (due) ticks++;
         float now = now();
         int count = 0;
         for (int i = 0; i < SLOTS; i++) {
@@ -146,16 +148,17 @@ public final class Puffs {
             CURSOR.set(X[i], Y[i], Z[i]);
             BlockState state = level.getBlockState(CURSOR);
             if (age < LIFE[i] - 0.2F && state.isCollisionShapeFullBlock(level, CURSOR)) LIFE[i] = age + 0.2F;
+            if (!due) continue;
             BLOCK_LIGHT[i] += (level.getBrightness(LightLayer.BLOCK, CURSOR) - BLOCK_LIGHT[i]) * 0.35F;
             SKY_LIGHT[i] += (level.getBrightness(LightLayer.SKY, CURSOR) - SKY_LIGHT[i]) * 0.35F;
         }
         alive = count;
         for (Entity entity : level.entitiesForRendering()) {
             if (!(entity instanceof LivingEntity living) || living.isRemoved() || living.distanceToSqr(player) > RANGE_SQ) continue;
-            if (!(living instanceof Player) && !(living instanceof Mob)) continue;
+            if (!(living instanceof Player) && !(living instanceof Mob) || !due && living != player) continue;
             visit(level, living, living == player);
         }
-        if (ticks % 100 == 0) WALKERS.values().removeIf(w -> ticks - w.seen > 40);
+        if (due && ticks % 100 == 0) WALKERS.values().removeIf(w -> ticks - w.seen > 40);
         Diagnostics.mark(Diagnostics.PUFFS, Diagnostics.detail() ? alive + " puffs" : null);
     }
 
@@ -417,7 +420,7 @@ public final class Puffs {
 
     private static void step(ClientLevel level, float partialTick, double eyeY) {
         long nanos = Util.getNanos();
-        float dt = Mth.clamp((nanos - simClock) / 1.0E9F, 0F, 0.1F);
+        float dt = Mth.clamp((nanos - simClock) / 1.0E9F, 0F, 0.1F) * Tempo.rate();
         simClock = nanos;
         if (dt <= 0F) return;
         WindParticles.sampleDrift(level, partialTick, eyeY);

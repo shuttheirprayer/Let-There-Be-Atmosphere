@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.AtmosphereScreen;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeColorModifier;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeBlend;
@@ -648,7 +649,7 @@ public class DynamicFogHandler {
         cwNear = FOG_SPREAD_BUF[0];
         cwFar  = FOG_SPREAD_BUF[1];
 
-        long tick = level.getGameTime();
+        long tick = Tempo.ticks();
         if (tick != lastNoiseTick) {
             cachedAtmNoise = noiseGen.at((tick * 0.0024F) + (float)((pos.x + pos.z) * 0.008));
             lastNoiseTick  = tick;
@@ -1006,9 +1007,9 @@ public class DynamicFogHandler {
     }
 
     private static void sampleColors(@NonNull Minecraft mc, @NonNull Vec3 pos, float pt) {
-        if (mc.level == null) return;
+        if (mc.level == null || mc.player == null) return;
         var level = mc.level;
-        long t = level.getGameTime();
+        long t = mc.player.tickCount;
 
         if (t == lastColorComputeTick) return;
 

@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -58,7 +59,7 @@ public final class WindBits {
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final RandomSource RANDOM = RandomSource.create();
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int head;
     private static int dirtyFrom = -1;
     private static int dirtyCount;
@@ -73,7 +74,7 @@ public final class WindBits {
     private static long simClock = Util.getNanos();
 
     private static float now() {
-        return (Util.getNanos() - base) / 1.0E9F;
+        return (float) (Tempo.seconds() - base);
     }
 
     private static float speedOf(int kind) {
@@ -131,7 +132,7 @@ public final class WindBits {
     private static void rebase(float now) {
         for (int i = 0; i < SLOTS; i++) ROW_A[i * 4 + 3] -= now;
         lastBirth -= now;
-        base = Util.getNanos();
+        base = Tempo.seconds();
         dirtyFrom = 0;
         dirtyCount = SLOTS;
     }
@@ -275,7 +276,7 @@ public final class WindBits {
 
     private static void simulate() {
         long nanos = Util.getNanos();
-        float dt = Mth.clamp((nanos - simClock) / 1.0E9F, 0F, 0.1F);
+        float dt = Mth.clamp((nanos - simClock) / 1.0E9F, 0F, 0.1F) * Tempo.rate();
         simClock = nanos;
         if (dt <= 0F) return;
         float now = now();

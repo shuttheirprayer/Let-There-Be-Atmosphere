@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -257,7 +258,7 @@ public final class WeatherStorms {
             GL20.glUniform4f(program.uniform(6), 0.93F, 0.78F, 0.55F, 1F);
         }
         long now = Util.getNanos();
-        float dt = driftAt == 0L || Minecraft.getInstance().isPaused() ? 0F : Math.min((now - driftAt) / 1.0E9F, 0.25F);
+        float dt = driftAt == 0L || Minecraft.getInstance().isPaused() ? 0F : Math.min((now - driftAt) / 1.0E9F, 0.25F) * Tempo.rate();
         driftAt = now;
         float push = (blizzard ? 15F * (0.8F + 0.4F * gust) : 22F * (0.75F + 0.5F * gust)) * dt;
         driftX += Mth.cos(angle) * push;

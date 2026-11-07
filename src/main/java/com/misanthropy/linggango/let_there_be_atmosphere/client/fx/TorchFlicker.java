@@ -1,6 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import me.jellysquid.mods.sodium.client.gl.shader.uniform.GlUniform;
 import net.minecraft.Util;
@@ -216,7 +217,7 @@ public final class TorchFlicker {
             return;
         }
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        float t = (now % 3_600_000L) / 1000F;
+        float t = (float) (Tempo.seconds() % 3600.0);
         FLAMES.clear();
         for (int i = 0; i < picked; i++) {
             long pos = PICK[i];

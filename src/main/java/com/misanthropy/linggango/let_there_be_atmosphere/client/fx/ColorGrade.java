@@ -17,7 +17,10 @@ import java.lang.reflect.Method;
 import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import java.nio.FloatBuffer;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.BufferUtils;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -72,6 +75,16 @@ public final class ColorGrade {
     private static int viewUniform;
     private static int viewTanUniform;
     private static int flareUniform;
+    private static int bloomReprojectUniform;
+    private static int bloomReusedUniform;
+    private static final Matrix4f BLOOM_VIEW_PROJECTION = new Matrix4f();
+    private static final Matrix4f BLOOM_REPROJECT = new Matrix4f();
+    private static final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
+    private static int bloomAge;
+    private static int bloomStamp = -1;
+    private static int bloomWidth;
+    private static int bloomSeen = -1;
+    private static boolean bloomReused;
     private static ShaderInstance down;
     private static int downThreshold;
     private static ShaderInstance gather;
@@ -142,7 +155,28 @@ public final class ColorGrade {
         if (vao == 0) vao = GlStateManager._glGenVertexArrays();
         GlStateManager._glBindVertexArray(vao);
         CaptureHook.probeBegin("bloom");
-        int glow = bloomOn ? bloom(scene, main.filterMode, width, height) : 0;
+        int glow = 0;
+        bloomReused = false;
+        if (bloomOn) {
+            int stamp = ViewCapture.stamp;
+            boolean captured = stamp != bloomSeen;
+            bloomSeen = stamp;
+            if (captured && bloomStamp >= 0 && mips[0] != null && bloomWidth == width && !Cadence.due(bloomAge, Cadence.interval() / 2)) {
+                glow = mips[0].getColorTextureId();
+                bloomReused = true;
+                bloomAge++;
+            } else {
+                glow = bloom(scene, main.filterMode, width, height);
+                if (glow != 0 && captured) {
+                    BLOOM_VIEW_PROJECTION.set(ViewCapture.VIEW_PROJECTION);
+                    bloomStamp = stamp;
+                    bloomWidth = width;
+                    bloomAge = 0;
+                } else {
+                    bloomStamp = -1;
+                }
+            }
+        }
         CaptureHook.probeEnd("bloom");
 
         main.bindWrite(true);
@@ -153,6 +187,11 @@ public final class ColorGrade {
         texture(2, rays);
         texture(1, glow);
         texture(0, scene);
+        GL20.glUniform1f(bloomReusedUniform, bloomReused ? 1F : 0F);
+        if (bloomReused) {
+            BLOOM_REPROJECT.set(BLOOM_VIEW_PROJECTION).mul(ViewCapture.INVERSE).get(MATRIX);
+            GL20.glUniformMatrix4fv(bloomReprojectUniform, false, MATRIX);
+        }
         GL20.glUniform1f(strengthUniform, glow != 0 ? (float) (FxConfig.bloomStrength * (1.0 + FxConfig.bloomSpread)) : 0F);
         if (rays != 0) {
             GL20.glUniform3f(raysUniform, SunPass.RAYS[0], SunPass.RAYS[1], SunPass.RAYS[2]);
@@ -323,6 +362,16 @@ public final class ColorGrade {
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mode);
     }
 
+    private static int gatherState = -1;
+
+    static boolean gatherSupported() {
+        if (gatherState < 0) {
+            GLCapabilities caps = GL.getCapabilities();
+            gatherState = caps.OpenGL40 || caps.GL_ARB_texture_gather ? 1 : 0;
+        }
+        return gatherState == 1;
+    }
+
     static boolean inPlace() {
         if (barrier < 0) {
             GLCapabilities caps = GL.getCapabilities();
@@ -415,6 +464,8 @@ public final class ColorGrade {
         viewUniform = GlStateManager._glGetUniformLocation(id, "View");
         viewTanUniform = GlStateManager._glGetUniformLocation(id, "ViewTan");
         flareUniform = GlStateManager._glGetUniformLocation(id, "Flare");
+        bloomReprojectUniform = GlStateManager._glGetUniformLocation(id, "BloomReproject");
+        bloomReusedUniform = GlStateManager._glGetUniformLocation(id, "BloomReused");
         units(loaded, "DiffuseSampler", "BloomSampler", "RaySampler", "SunSampler", "DepthSampler", "NoiseSampler");
         shader = loaded;
         loadFailed = false;

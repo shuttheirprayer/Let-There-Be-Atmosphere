@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -94,7 +95,7 @@ public final class NetherStorm {
         boolean snap = frameAt == 0L;
         frameAt = now;
         float surge = NetherDust.surge();
-        phase += dt * (1F + 0.9F * surge);
+        phase += dt * Tempo.rate() * (1F + 0.9F * surge);
         int look = NetherAir.look();
         float k = snap ? 1F : 1F - (float) Math.exp(-dt * 0.8F);
         for (int i = 0; i < 3; i++) {
@@ -151,7 +152,7 @@ public final class NetherStorm {
         GL20.glUniform3f(program.uniform(10), up.x(), up.y(), up.z());
         GL20.glUniform4f(program.uniform(11), RenderSystem.getShaderFogStart(), Math.max(RenderSystem.getShaderFogEnd(), 16F), 1F, 0.4F + 0.6F * billow);
         GL20.glUniform4f(program.uniform(12), fog[0], fog[1], fog[2], 1F);
-        float seconds = (Util.getMillis() % 3_600_000L) / 1000F;
+        float seconds = (float) (Tempo.seconds() % 3600.0);
         float windX = NetherDust.windX(), windZ = NetherDust.windZ();
         int total = 0;
         RING_BOXES.clear();

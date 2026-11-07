@@ -81,7 +81,7 @@ public final class BiomeFx {
             checkedLevel = null;
             return;
         }
-        long now = level.getGameTime();
+        long now = camera.tickCount;
         if (!stale && level == checkedLevel && now == checkedAt) return;
         checkedLevel = level;
         checkedAt = now;

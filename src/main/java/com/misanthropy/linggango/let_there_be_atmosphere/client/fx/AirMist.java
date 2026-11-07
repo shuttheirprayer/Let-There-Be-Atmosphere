@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.nio.FloatBuffer;
@@ -57,13 +58,13 @@ public final class AirMist {
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
     private static final RandomSource RANDOM = RandomSource.create();
 
-    private static final long BASE = Util.getNanos();
+    private static final double BASE = Tempo.seconds();
     private static long simClock = Util.getNanos();
     private static float pushX, pushZ;
     private static int alive;
 
     private static float now() {
-        return (Util.getNanos() - BASE) / 1.0E9F;
+        return (float) (Tempo.seconds() - BASE);
     }
 
     private static boolean allowed(ClientLevel level) {
@@ -211,7 +212,7 @@ public final class AirMist {
 
     private static void drift(ClientLevel level, float partialTick, double eyeY) {
         long nanos = Util.getNanos();
-        float dt = Mth.clamp((nanos - simClock) / 1.0E9F, 0F, 0.1F);
+        float dt = Mth.clamp((nanos - simClock) / 1.0E9F, 0F, 0.1F) * Tempo.rate();
         simClock = nanos;
         if (dt <= 0F) return;
         WindParticles.sampleDrift(level, partialTick, eyeY);

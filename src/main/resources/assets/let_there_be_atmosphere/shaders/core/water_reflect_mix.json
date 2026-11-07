@@ -8,10 +8,14 @@
         { "name": "SceneSampler" },
         { "name": "BaseSampler" },
         { "name": "DepthSampler" },
-        { "name": "SolidSampler" }
+        { "name": "SolidSampler" },
+        { "name": "MaskSampler" }
     ],
     "uniforms": [
         { "name": "InverseTransform", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
-        { "name": "Spread", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
+        { "name": "Spread", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "Masked", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "ReflectReproject", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "Reused", "type": "float", "count": 1, "values": [ 0.0 ] }
     ]
 }

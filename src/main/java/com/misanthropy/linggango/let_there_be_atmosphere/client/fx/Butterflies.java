@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
@@ -51,7 +52,7 @@ public final class Butterflies {
     private static final RandomSource RANDOM = RandomSource.create();
     private static final Matrix4f MATRIX = new Matrix4f();
 
-    private static long base = Util.getNanos();
+    private static double base = Tempo.seconds();
     private static int data;
     private static boolean dirty = true;
     private static boolean anchored;
@@ -62,7 +63,7 @@ public final class Butterflies {
     private static float lastDeath = -100F;
 
     private static float now() {
-        return ((Util.getNanos() - base) / 1.0E9F) % 3600F;
+        return (float) (Tempo.seconds() - base) % 3600F;
     }
 
     public static void onButterflyTick(TickEvent.ClientTickEvent event) {
@@ -180,7 +181,7 @@ public final class Butterflies {
 
     private static void drift(float partialTick, double eyeY, float time) {
         long nanos = Util.getNanos();
-        float dt = Mth.clamp((nanos - driftClock) / 1.0E9F, 0F, 0.1F);
+        float dt = Mth.clamp((nanos - driftClock) / 1.0E9F, 0F, 0.1F) * Tempo.rate();
         driftClock = nanos;
         if (level == null || dt <= 0F || FxConfig.windStrength <= 0.0) return;
         WindParticles.sampleDrift(level, partialTick, eyeY);

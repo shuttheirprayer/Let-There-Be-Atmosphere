@@ -2,6 +2,7 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -101,7 +102,7 @@ public final class CometRenderer {
         }
 
         Matrix4f matrix = event.getPoseStack().last().pose();
-        draw(matrix, partialTick, visible);
+        draw(matrix, Tempo.partial(partialTick), visible);
         Diagnostics.mark(Diagnostics.COMETS, Diagnostics.detail()
                 ? String.format("%d in flight, visible %.2f", Comets.liveCount(), visible) : null);
     }

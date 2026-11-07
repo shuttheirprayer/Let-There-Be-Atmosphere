@@ -22,6 +22,7 @@ public final class ViewCapture {
     static float fogStart;
     static float fogEnd;
     static boolean fresh;
+    static int stamp;
 
     public static void onRenderViewCaptureStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
@@ -31,6 +32,7 @@ public final class ViewCapture {
         PROJECTION.set(event.getProjectionMatrix());
         VIEW_PROJECTION.set(PROJECTION).mul(event.getPoseStack().last().pose());
         VIEW_PROJECTION.invert(INVERSE);
+        stamp++;
         fogStart = RenderSystem.getShaderFogStart();
         fogEnd = RenderSystem.getShaderFogEnd();
     }

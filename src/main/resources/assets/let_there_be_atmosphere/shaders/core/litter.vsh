@@ -41,7 +41,8 @@ void main() {
     int kind = code / 32;
     int sprite = code - kind * 32;
     float t = Clock.x - a.w;
-    if (b.w == 0.0 || t < 0.0 || (b.w > 0.0 && t > b.w) || (kind != 0 && length(a.xyz + Offset) > LitterFog.w)) {
+    bool flower = kind == 1 && ((sprite >= 16 && sprite <= 24) || sprite == 27);
+    if ((Clock.w > 0.5 && !flower) || b.w == 0.0 || t < 0.0 || (b.w > 0.0 && t > b.w) || (kind != 0 && length(a.xyz + Offset) > LitterFog.w)) {
         hide();
         return;
     }
@@ -99,16 +100,12 @@ void main() {
             pos += vec3(c.z, c.y, c.w) * dt;
             yaw += d.y;
         }
-        if ((sprite >= 16 && sprite <= 24) || sprite == 27) {
-            vec3 eye = -(pos + Offset);
-            vec3 facing = eye / max(length(eye), 0.001);
-            vec3 right = cross(vec3(0.0, 1.0, 0.0), facing);
-            float span = length(right);
-            right = span > 0.01 ? right / span : vec3(1.0, 0.0, 0.0);
-            vec3 up = cross(facing, right);
+        if (flower) {
+            // two fixed planes in an X like a vanilla flower; Clock.w picks the plane, both share one lean so the X stays whole
+            float face = yaw + Clock.w * 1.5707963;
+            vec3 across = vec3(cos(face), 0.0, sin(face));
             float lean = (h.z - 0.5) * 0.5 + 0.06 * sin(Clock.x * 1.6 + h.y * 6.283);
-            vec3 across = right * cos(lean) + up * sin(lean);
-            vec3 rise = up * cos(lean) - right * sin(lean);
+            vec3 rise = vec3(0.0, cos(lean), 0.0) + vec3(cos(h.y * 6.283), 0.0, sin(h.y * 6.283)) * sin(lean);
             float small = scale * 0.5;
             local = across * (sx * small) + rise * ((sy + 1.0) * small);
         } else {

@@ -48,6 +48,7 @@ void main() {
         float width = 0.3;
         vec3 dir = normalize(along + NORMAL * c.y * width);
         gl_Position = Transform * vec4(dir * 100.0, 1.0);
+        gl_Position.z = gl_Position.w;
         local = c;
         kind = 4.0;
         glow = Field.x * smoothstep(-0.08, 0.3, elevation(dir));
@@ -79,7 +80,7 @@ void main() {
     float scale = max(floor(Band.y + 0.5), 1.0);
     float extent = (kind == 1.0 ? 0.5 : kind == 2.0 ? 1.5 : 3.5) * scale;
     vec2 ndc = (pixel + c * extent) / res * 2.0 - 1.0;
-    gl_Position = vec4(ndc * clip.w, clip.z, clip.w);
+    gl_Position = vec4(ndc * clip.w, clip.w, clip.w);
     local = c;
     dust = vec2(0.0);
 }

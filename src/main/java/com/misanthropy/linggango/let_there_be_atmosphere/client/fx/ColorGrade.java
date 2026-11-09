@@ -279,7 +279,7 @@ public final class ColorGrade {
 
         float threshold = (float) FxConfig.bloomThreshold;
         ProgramManager.glUseProgram(down.getId());
-        GL20.glUniform3f(downThreshold, threshold, BLOOM_KNEE, 1F);
+        GL20.glUniform3f(downThreshold, threshold, BLOOM_KNEE, 1F + dimness());
         texture(2, Minecraft.getInstance().getMainRenderTarget().getDepthTextureId());
         texture(1, mips[BLOOM_LEVELS - 1].getColorTextureId());
         texture(0, scene);

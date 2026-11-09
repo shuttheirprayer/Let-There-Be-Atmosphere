@@ -9,7 +9,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
-import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
@@ -148,7 +147,6 @@ public final class CometRenderer {
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-        FogRenderer.setupNoFog();
         RenderSystem.setShaderTexture(0, HEAD_TEXTURE);
 
         if (live > 0) {

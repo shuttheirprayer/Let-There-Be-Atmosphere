@@ -7,7 +7,6 @@ import com.misanthropy.linggango.let_there_be_atmosphere.config.AtmosphereConfig
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -103,7 +102,6 @@ public final class HazeBandRenderer {
         RenderSystem.depthFunc(GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
-        FogRenderer.setupNoFog();
         SkyProgram program = SkyProgram.HAZE;
         if (program.ready()) {
             program.begin();

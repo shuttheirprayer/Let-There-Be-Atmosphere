@@ -70,7 +70,7 @@ void main() {
     vec3 light = texelFetch(Sampler1, ivec2(block, word - block * 16), 0).rgb;
     baseColor = tone * (shade * contact * (0.92 + 0.16 * hash(b.y * 37.1))) * light;
     atlas = m0.w >= 2.0 ? 1.0 : 0.0;
-    texCoord = atlas > 0.5 ? vec2(m0.w - 2.0, m1.x) : vec2(m0.w, m1.x) / 64.0;
+    texCoord = atlas > 0.5 ? vec2(m0.w - 2.0, m1.x) : vec2(m0.w, m1.x);
     float dist = length(p + Offset);
     fade = min((Clock.x - a.w) * 2.0, 1.0) * (1.0 - smoothstep(26.0, 34.0, dist));
     fogDistance = dist;

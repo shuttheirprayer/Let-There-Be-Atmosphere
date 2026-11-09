@@ -101,13 +101,13 @@ public final class StageDispatch {
 
     private static void dispatch(RenderLevelStageEvent event, RenderLevelStageEvent.Stage stage) {
         if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
-            StarSky.onRenderStarSkyStage(event);
             SkyGlow.onRenderSkyStage(event);
             Lightning.onRenderLightningStage(event);
             EndSky.onRenderEndSkyStage(event);
             AuroraRenderer.onRenderSkyStage(event);
             CaptureHook.onCaptureHookStage(event);
         } else if (stage == RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) {
+            StarSky.onRenderStarSkyStage(event);
             HazeBandRenderer.onRenderSkyStage(event);
             CometRenderer.onRenderSkyStage(event);
             Tumbleweeds.onRenderTumbleweedsStage(event);

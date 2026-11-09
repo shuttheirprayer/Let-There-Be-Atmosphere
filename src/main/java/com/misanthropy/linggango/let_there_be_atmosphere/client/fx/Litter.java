@@ -717,6 +717,8 @@ public final class Litter {
         float[] fog = RenderSystem.getShaderFogColor();
         GL20.glUniform4f(program.uniform(3), fog[0], fog[1], fog[2], CULL);
         program.draw(SOLID_BASE * 6);
+        GL20.glUniform4f(program.uniform(2), now(), RenderSystem.getShaderFogStart(), RenderSystem.getShaderFogEnd(), 1F);
+        program.draw(GROUND * 6);
         program.end();
         SkyProgram solid = SkyProgram.LITTER_SOLID;
         if (models < 0 || atlasMoved()) loadModels();
@@ -790,6 +792,7 @@ public final class Litter {
             com.google.gson.JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
             JsonArray list = root.getAsJsonArray("models");
             JsonArray swatches = root.getAsJsonArray("swatches");
+            float size = root.get("size").getAsFloat();
             int stride = 0;
             for (JsonElement model : list) stride = Math.max(stride, model.getAsJsonArray().size());
             FloatBuffer buffer = BufferUtils.createFloatBuffer(stride * 8 * list.size());
@@ -801,14 +804,16 @@ public final class Litter {
                         continue;
                     }
                     JsonArray f = vertices.get(v).getAsJsonArray();
-                    float u = f.get(3).getAsFloat(), w = f.get(4).getAsFloat();
+                    float pu = f.get(3).getAsFloat(), pv = f.get(4).getAsFloat();
+                    // own-sheet UVs go in as 0-1 so the shader's ">= 2 means block atlas" flag can't misfire
+                    float u = pu / size, w = pv / size;
                     for (JsonElement entry : swatches) {
                         JsonArray sw = entry.getAsJsonArray();
                         float sx = sw.get(0).getAsFloat(), sy = sw.get(1).getAsFloat();
-                        if (u < sx || w < sy || u > sx + sw.get(2).getAsFloat() || w > sy + sw.get(3).getAsFloat()) continue;
+                        if (pu < sx || pv < sy || pu > sx + sw.get(2).getAsFloat() || pv > sy + sw.get(3).getAsFloat()) continue;
                         if (sw.get(4).isJsonNull()) break;
                         TextureAtlasSprite sprite = atlas.apply(new ResourceLocation(sw.get(4).getAsString()));
-                        float lu = u - sx, lv = w - sy;
+                        float lu = pu - sx, lv = pv - sy;
                         boolean turned = sw.get(5).getAsBoolean();
                         u = sprite.getU(turned ? lv : lu) + 2F;
                         w = sprite.getV(turned ? lu : lv);

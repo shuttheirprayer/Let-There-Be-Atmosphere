@@ -18,7 +18,8 @@ void main() {
                 average += textureLod(AverageSampler, vec2(x, y) / 3.0 + 1.0 / 6.0, 0.0).a;
             }
         }
-        float dark = 1.0 - smoothstep(0.02, 0.35, average / 9.0);
+        // a dark screen only lifts the glow when the player is really in the dark, not beside a tree trunk in daylight
+        float dark = (1.0 - smoothstep(0.02, 0.35, average / 9.0)) * clamp(Threshold.z - 1.0, 0.0, 1.0);
         float bright = smoothstep(0.3, 0.6, average / 9.0);
         exposure = vec3(mix(Threshold.x * mix(1.0, 0.65, dark), max(Threshold.x, 0.93), bright), mix(1.0, 6.0, dark), dark);
     }

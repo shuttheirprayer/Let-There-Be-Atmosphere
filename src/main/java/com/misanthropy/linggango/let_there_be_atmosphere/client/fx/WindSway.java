@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.WaterlilyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -125,7 +126,7 @@ public final class WindSway {
     public static String patch(String source) {
         if (source.contains("linggango_sway(")) return source;
         if (!source.contains(HEAD) || !source.contains(HOOK)) {
-            Diagnostics.once("wind sway could not find its place in the terrain shader, so plants stay still");
+            Diagnostics.once("wind sway could not find its place in the terrain shader, so plants stay still.. oopsies!");
             return source;
         }
         Diagnostics.once("wind sway patched into the terrain shader");
@@ -151,6 +152,9 @@ public final class WindSway {
                 float height = Mth.clamp(y, 0F, 1F);
                 if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
                     height = (height + (state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER ? 1F : 0F)) * 0.5F;
+                } else {
+                    Property<?> part = state.getBlock().getStateDefinition().getProperty("part");
+                    if (part != null) height = stacked(state, part, height);
                 }
                 return kind << 3 | Math.round(height * 7F) << 5;
             }
@@ -161,6 +165,26 @@ public final class WindSway {
             default:
                 return 0;
         }
+    }
+
+    // support multiblock grass
+    private static <T extends Comparable<T>> float stacked(BlockState state, Property<T> part, float height) {
+        int n = part.getPossibleValues().size();
+        if (n < 2) return height;
+        T value = state.getValue(part);
+        int index = switch (part.getName(value)) {
+            case "lower", "bottom" -> 0;
+            case "upper", "top" -> n - 1;
+            default -> {
+                int i = 0;
+                for (T v : part.getPossibleValues()) {
+                    if (v.equals(value)) break;
+                    i++;
+                }
+                yield i;
+            }
+        };
+        return (height + index) / n;
     }
 
     public static final float[][] PUSH = new float[4][4];

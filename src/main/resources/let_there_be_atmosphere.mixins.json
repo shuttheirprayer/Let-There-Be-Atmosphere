@@ -15,6 +15,7 @@
     "atmosphere.CloudRangeMixin",
     "atmosphere.EndSkyMixin",
     "atmosphere.FogRendererFluidMixin",
+    "atmosphere.GrowingPlantAccessor",
     "atmosphere.GameRendererGradeMixin",
     "atmosphere.LevelRendererFluidMixin",
     "atmosphere.LevelRendererStarAccessor",

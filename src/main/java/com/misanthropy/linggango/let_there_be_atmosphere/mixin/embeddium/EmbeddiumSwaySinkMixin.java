@@ -23,14 +23,16 @@ public class EmbeddiumSwaySinkMixin implements SwaySink {
     @Shadow @Final private ChunkVertexEncoder.Vertex[] sodiumVertexArray;
 
     @Unique private BlockState linggango$state;
+    @Unique private int linggango$column;
     @Unique private BlockState linggango$tagged;
     @Unique private int linggango$kind;
     @Unique private int linggango$glow;
     @Unique private int linggango$epoch;
 
     @Override
-    public void linggango$block(BlockState state) {
+    public void linggango$block(BlockState state, int column) {
         linggango$state = state;
+        linggango$column = column;
     }
 
     @Inject(method = "flush(Lme/jellysquid/mods/sodium/client/render/chunk/compile/buffers/ChunkModelBuilder;Lme/jellysquid/mods/sodium/client/render/chunk/terrain/material/Material;FFF)Z",
@@ -47,8 +49,24 @@ public class EmbeddiumSwaySinkMixin implements SwaySink {
             linggango$glow = GlowTag.bits(state);
         }
         int kind = linggango$kind;
+        if (kind == WindSway.NONE || linggango$column == WindSway.STILL) {
+            for (ChunkVertexEncoder.Vertex vertex : sodiumVertexArray) ((SwayVertex) vertex).linggango$setSway(linggango$glow);
+            return;
+        }
+        if (kind == WindSway.VINE) {
+            float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, minZ = Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
+            for (ChunkVertexEncoder.Vertex vertex : sodiumVertexArray) {
+                minX = Math.min(minX, vertex.x - ox);
+                maxX = Math.max(maxX, vertex.x - ox);
+                minZ = Math.min(minZ, vertex.z - oz);
+                maxZ = Math.max(maxZ, vertex.z - oz);
+            }
+            int bits = WindSway.vineBits(minX, maxX, minZ, maxZ);
+            for (ChunkVertexEncoder.Vertex vertex : sodiumVertexArray) ((SwayVertex) vertex).linggango$setSway(bits);
+            return;
+        }
         for (ChunkVertexEncoder.Vertex vertex : sodiumVertexArray) {
-            ((SwayVertex) vertex).linggango$setSway(kind == WindSway.NONE ? linggango$glow : WindSway.bits(kind, state, vertex.y - oy));
+            ((SwayVertex) vertex).linggango$setSway(WindSway.bits(kind, state, vertex.y - oy, linggango$column));
         }
     }
 }

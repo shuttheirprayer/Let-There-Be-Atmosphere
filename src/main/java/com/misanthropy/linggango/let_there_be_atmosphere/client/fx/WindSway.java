@@ -1,25 +1,25 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
+import com.misanthropy.linggango.let_there_be_atmosphere.mixin.atmosphere.GrowingPlantAccessor;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.BushBlock;
-import net.minecraft.world.level.block.GrowingPlantBlock;
-import net.minecraft.world.level.block.SugarCaneBlock;
-import net.minecraft.world.level.block.VineBlock;
-import net.minecraft.world.level.block.WaterlilyBlock;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.vehicle.Boat;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -30,8 +30,14 @@ public final class WindSway {
     public static final int NONE = 0;
     public static final int LEAVES = 1;
     public static final int PLANT = 2;
-    public static final int WEAK = 3;
+    public static final int VINE = 3;
     public static final int TUFTS = 4;
+    public static final int STILL = -1;
+    private static final int HANGS = 1 << 10;
+    private static final int GROWS = 1 << 11;
+    private static final int ROOF_REACH = 10;
+    private static final int COLUMN_REACH = 15;
+    private static final float GROWING_SCALE = 0.56F;
 
     public static final float[] WIND = new float[4];
     public static final float[] CAMERA = new float[4];
@@ -108,9 +114,20 @@ public final class WindSway {
                     vec3 lean = vec3(along.x, 0.0, along.y) * bend * (0.03 + 0.06 * gust);
                     return (rustle * amp + vec3(quiver, quiver * 0.3, -quiver) * (0.003 + 0.01 * bend * gust) + lean) * u_LinggangoWind.w;
                 }
+                if (kind == 3u) {
+                    uint wall = (_material_params >> 5u) & 7u;
+                    vec2 n = wall == 1u ? vec2(0.0, 1.0) : wall == 2u ? vec2(0.0, -1.0) : wall == 3u ? vec2(1.0, 0.0) : wall == 4u ? vec2(-1.0, 0.0) : vec2(0.0);
+                    vec2 across = wall == 0u ? side : vec2(-n.y, n.x);
+                    float ripple = sin(t * 1.9 + phase * 2.3 + world.y * 1.1) * 0.5 + 0.5;
+                    float flutter = sin(t * 3.1 + phase * 3.3 + world.y * 0.8) * 0.7 + sin(t * 7.0 + phase * 5.1 + world.y * 1.7) * 0.3;
+                    float billow = min((0.012 + 0.05 * bend * (0.5 + gust)) * (0.35 + 0.65 * ripple) * (0.7 + 0.3 * dot(along, n)) * u_LinggangoWind.w, 0.12);
+                    vec2 off = n * billow + across * flutter * (0.01 + 0.025 * bend) * u_LinggangoWind.w;
+                    if (wall == 0u) off += along * bend * (0.03 + 0.04 * gust) * u_LinggangoWind.w;
+                    return vec3(off.x, -dot(off, off) * 0.7, off.y);
+                }
                 float sway = sin(t * 1.7 + phase * 2.1 + world.y * 0.7) * 0.6 + sin(t * 2.9 + phase * 3.7) * 0.4;
                 float quiver = sin(t * 11.0 + phase * 7.3) * 0.6 + sin(t * 17.0 + phase * 4.1) * 0.4;
-                float amp = (kind == 2u ? 0.38 : 0.16) * pow(height, 1.5);
+                float amp = 0.38 * pow(height, 1.5);
                 float push = bend * (0.55 + 0.9 * gust);
                 vec2 lean = along * (push + sway * 0.35 * calm * (0.3 + bend) + quiver * 0.06 * bend)
                           + side * (sway * 0.12 * calm + quiver * 0.035 * bend);
@@ -137,20 +154,68 @@ public final class WindSway {
         if (state.is(BlockTags.LEAVES)) return LEAVES;
         Block block = state.getBlock();
         if (block instanceof WaterlilyBlock) return NONE;
-        if (block instanceof BushBlock || block instanceof SugarCaneBlock) return PLANT;
-        if (block instanceof VineBlock || block instanceof GrowingPlantBlock) return WEAK;
+        if (block instanceof VineBlock) return VINE;
+        if (block instanceof BushBlock || block instanceof SugarCaneBlock || block instanceof GrowingPlantBlock) return PLANT;
         if (state.is(BlockTags.DIRT) || state.is(BlockTags.SAND)) return TUFTS;
         return NONE;
     }
 
-    public static int bits(int kind, BlockState state, float y) {
+    public static int column(BlockGetter level, BlockPos pos, BlockState state, int kind) {
+        if (kind == NONE) return 0;
+        if (roofed(level, pos)) return STILL;
+        Block block = state.getBlock();
+        boolean grows = block instanceof GrowingPlantBlock;
+        if (kind != PLANT || !grows && !(block instanceof SugarCaneBlock)) return 0;
+        int below = run(level, pos, Direction.DOWN, block), above = run(level, pos, Direction.UP, block);
+        boolean hangs = grows && growth(block) == Direction.DOWN;
+        return (below + above + 1) | (hangs ? above : below) << 5 | (hangs ? HANGS : 0) | (grows ? GROWS : 0);
+    }
+
+    private static boolean roofed(BlockGetter level, BlockPos pos) {
+        BlockPos.MutableBlockPos cursor = pos.mutable();
+        for (int i = 0; i < ROOF_REACH; i++) {
+            BlockState above = level.getBlockState(cursor.move(Direction.UP));
+            if (above.blocksMotion() && !above.is(BlockTags.LEAVES) && !above.is(BlockTags.LOGS)) return true;
+        }
+        return false;
+    }
+
+    private static int run(BlockGetter level, BlockPos pos, Direction step, Block block) {
+        BlockPos.MutableBlockPos cursor = pos.mutable();
+        int n = 0;
+        while (n < COLUMN_REACH && sameColumn(level.getBlockState(cursor.move(step)).getBlock(), block)) n++;
+        return n;
+    }
+
+    private static boolean sameColumn(Block other, Block block) {
+        if (other == block) return true;
+        return block instanceof GrowingPlantBlock && other instanceof GrowingPlantBlock && growth(other) == growth(block);
+    }
+
+    private static Direction growth(Block block) {
+        return ((GrowingPlantAccessor) block).linggango$growthDirection();
+    }
+
+    public static int vineBits(float minX, float maxX, float minZ, float maxZ) {
+        int wall = 0;
+        if (maxZ - minZ < 0.01F && maxZ < 0.2F) wall = 1;
+        else if (maxZ - minZ < 0.01F && minZ > 0.8F) wall = 2;
+        else if (maxX - minX < 0.01F && maxX < 0.2F) wall = 3;
+        else if (maxX - minX < 0.01F && minX > 0.8F) wall = 4;
+        return VINE << 3 | wall << 5;
+    }
+
+    public static int bits(int kind, BlockState state, float y, int column) {
         switch (kind) {
             case LEAVES:
                 return LEAVES << 3 | 7 << 5;
-            case PLANT:
-            case WEAK: {
+            case PLANT: {
                 float height = Mth.clamp(y, 0F, 1F);
-                if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
+                if (column > 0) {
+                    float along = (column & HANGS) != 0 ? 1F - height : height;
+                    height = ((column >> 5 & 31) + along) / (column & 31);
+                    if ((column & GROWS) != 0) height *= GROWING_SCALE;
+                } else if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
                     height = (height + (state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER ? 1F : 0F)) * 0.5F;
                 } else {
                     Property<?> part = state.getBlock().getStateDefinition().getProperty("part");

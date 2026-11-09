@@ -1,8 +1,8 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.config;
 
+import com.google.gson.*;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
-import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLPaths;
 

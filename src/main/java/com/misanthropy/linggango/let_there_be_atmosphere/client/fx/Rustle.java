@@ -49,7 +49,7 @@ public final class Rustle {
         if (state.is(BlockTags.LEAVES) || level.getBlockState(feet.above()).is(BlockTags.LEAVES)) {
             event = SoundEvents.AZALEA_LEAVES_STEP;
             pitch = 1.0F + RANDOM.nextFloat() * 0.3F;
-        } else if (kind == WindSway.WEAK || state.getBlock() instanceof GrowingPlantBlock) {
+        } else if (kind == WindSway.VINE || state.getBlock() instanceof GrowingPlantBlock) {
             event = SoundEvents.VINE_STEP;
             pitch = 0.9F + RANDOM.nextFloat() * 0.3F;
         } else if (state.getBlock() instanceof CropBlock) {

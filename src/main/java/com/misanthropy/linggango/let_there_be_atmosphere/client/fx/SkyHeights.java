@@ -1,7 +1,6 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import java.nio.FloatBuffer;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.QuartPos;
@@ -14,6 +13,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+
+import java.nio.FloatBuffer;
 
 public final class SkyHeights {
     private SkyHeights() {}

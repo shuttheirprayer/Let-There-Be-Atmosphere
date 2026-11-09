@@ -1,8 +1,8 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.mixin.atmosphere;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Lightning;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.LightTint;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.Lightning;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;

@@ -6,7 +6,6 @@ import com.misanthropy.linggango.let_there_be_atmosphere.client.Tempo;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import java.nio.FloatBuffer;
 import net.minecraft.Util;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -24,7 +23,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -32,6 +30,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+
+import java.nio.FloatBuffer;
 
 @OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = Let_there_be_atmosphere.MODID, value = Dist.CLIENT)
@@ -179,7 +179,7 @@ public final class WindBits {
         boolean leaves = state.is(BlockTags.LEAVES);
         if (!leaves) {
             int plant = WindSway.kind(state);
-            if (plant != WindSway.PLANT && plant != WindSway.WEAK) return false;
+            if (plant != WindSway.PLANT && plant != WindSway.VINE) return false;
         } else {
             CURSOR.set(x + (wx > 0F ? 1 : -1), y, z + (wz > 0F ? 1 : -1));
             if (level.getBlockState(CURSOR).canOcclude()) return false;

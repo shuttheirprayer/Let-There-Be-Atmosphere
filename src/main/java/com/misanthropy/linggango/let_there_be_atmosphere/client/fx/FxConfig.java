@@ -1,8 +1,7 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
-import net.minecraft.util.Mth;
-
 import com.misanthropy.linggango.let_there_be_atmosphere.config.ConfigText;
+import net.minecraft.util.Mth;
 
 import java.util.Properties;
 

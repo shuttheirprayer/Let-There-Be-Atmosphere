@@ -1,10 +1,10 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.mixin.embeddium;
 
+import com.llamalad7.mixinextras.sugar.Local;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.GlowTag;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SwaySink;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.SwayVertex;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.fx.WindSway;
-import com.llamalad7.mixinextras.sugar.Local;
 import me.jellysquid.mods.sodium.client.compat.ccl.SinkingVertexBuilder;
 import me.jellysquid.mods.sodium.client.model.light.data.QuadLightData;
 import me.jellysquid.mods.sodium.client.model.quad.BakedQuadView;
@@ -33,10 +33,10 @@ public class EmbeddiumSwayBlockMixin {
     @Unique private int linggango$glow;
     @Unique private int linggango$epoch;
 
-    @Inject(method = "writeGeometry", require = 0, at = @At(value = "INVOKE",
-            target = "Lme/jellysquid/mods/sodium/client/render/chunk/vertex/builder/ChunkMeshBufferBuilder;push([Lme/jellysquid/mods/sodium/client/render/chunk/vertex/format/ChunkVertexEncoder$Vertex;Lme/jellysquid/mods/sodium/client/render/chunk/terrain/material/Material;)V"))
-    private void linggango$tagSway(BlockRenderContext ctx, ChunkModelBuilder builder, Vec3 offset, Material material,
-                                   BakedQuadView quad, int[] colors, QuadLightData light, CallbackInfo ci) {
+    @Unique private int linggango$column;
+
+    @Inject(method = "renderModel", require = 0, at = @At("HEAD"))
+    private void linggango$placeSway(CallbackInfo ci, @Local(argsOnly = true) BlockRenderContext ctx) {
         BlockState state = ctx.state();
         if (state != linggango$state || linggango$epoch != GlowTag.epoch) {
             linggango$state = state;
@@ -44,21 +44,40 @@ public class EmbeddiumSwayBlockMixin {
             linggango$kind = WindSway.kind(state);
             linggango$glow = GlowTag.bits(state);
         }
+        linggango$column = WindSway.column(ctx.world(), ctx.pos(), state, linggango$kind);
+    }
+
+    @Inject(method = "writeGeometry", require = 0, at = @At(value = "INVOKE",
+            target = "Lme/jellysquid/mods/sodium/client/render/chunk/vertex/builder/ChunkMeshBufferBuilder;push([Lme/jellysquid/mods/sodium/client/render/chunk/vertex/format/ChunkVertexEncoder$Vertex;Lme/jellysquid/mods/sodium/client/render/chunk/terrain/material/Material;)V"))
+    private void linggango$tagSway(BlockRenderContext ctx, ChunkModelBuilder builder, Vec3 offset, Material material,
+                                   BakedQuadView quad, int[] colors, QuadLightData light, CallbackInfo ci) {
         int kind = linggango$kind;
-        if (kind == WindSway.NONE) {
+        if (kind == WindSway.NONE || linggango$column == WindSway.STILL) {
             for (ChunkVertexEncoder.Vertex vertex : vertices) ((SwayVertex) vertex).linggango$setSway(linggango$glow);
             return;
         }
         WindSway.tagged++;
-        float base = ctx.origin().y() + (float) offset.y;
+        float bx = ctx.origin().x() + (float) offset.x, by = ctx.origin().y() + (float) offset.y, bz = ctx.origin().z() + (float) offset.z;
+        if (kind == WindSway.VINE) {
+            float minX = Float.MAX_VALUE, maxX = -Float.MAX_VALUE, minZ = Float.MAX_VALUE, maxZ = -Float.MAX_VALUE;
+            for (ChunkVertexEncoder.Vertex vertex : vertices) {
+                minX = Math.min(minX, vertex.x - bx);
+                maxX = Math.max(maxX, vertex.x - bx);
+                minZ = Math.min(minZ, vertex.z - bz);
+                maxZ = Math.max(maxZ, vertex.z - bz);
+            }
+            int bits = WindSway.vineBits(minX, maxX, minZ, maxZ);
+            for (ChunkVertexEncoder.Vertex vertex : vertices) ((SwayVertex) vertex).linggango$setSway(bits);
+            return;
+        }
         for (ChunkVertexEncoder.Vertex vertex : vertices) {
-            ((SwayVertex) vertex).linggango$setSway(WindSway.bits(kind, state, vertex.y - base));
+            ((SwayVertex) vertex).linggango$setSway(WindSway.bits(kind, linggango$state, vertex.y - by, linggango$column));
         }
     }
 
     @Inject(method = "renderModel", require = 0, at = @At(value = "INVOKE",
             target = "Lme/jellysquid/mods/sodium/client/compat/ccl/SinkingVertexBuilder;flush(Lme/jellysquid/mods/sodium/client/render/chunk/compile/buffers/ChunkModelBuilder;Lme/jellysquid/mods/sodium/client/render/chunk/terrain/material/Material;Lorg/joml/Vector3fc;)Z"))
     private void linggango$tagSink(CallbackInfo ci, @Local(argsOnly = true) BlockRenderContext ctx) {
-        ((SwaySink) (Object) sinkingVertexBuilder).linggango$block(ctx.state());
+        ((SwaySink) (Object) sinkingVertexBuilder).linggango$block(ctx.state(), linggango$column);
     }
 }

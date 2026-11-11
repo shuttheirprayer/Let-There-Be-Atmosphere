@@ -1,10 +1,13 @@
 package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
+import com.misanthropy.linggango.let_there_be_atmosphere.client.CaptureHook;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.Diagnostics;
 import com.misanthropy.linggango.let_there_be_atmosphere.tweaks.dynamic_fog.DynamicFogHandler;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.shaders.AbstractUniform;
+import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -56,6 +59,9 @@ public final class StoryClouds {
 
     private static ShaderInstance shader;
     private static ShaderInstance farShader;
+    private static AbstractUniform cloudOffset, fadeRange, fogTint, sunDir, skyTint, cellSize, lightUniform, pastelUniform, depthPass;
+    private static int[] nearFirst;
+    private static int nearFirstSpan;
     private static BufferBuilder builder;
     private static float[] quantiles;
     private static float quantilesDetail = Float.NaN;
@@ -145,21 +151,21 @@ public final class StoryClouds {
         float baseY = level.effects().getCloudHeight() + (float) StoryCloudConfig.heightOffset;
         float reach = drawn.reach();
 
-        shader.safeGetUniform("CloudOffset").set((float) (drawn.anchorX() * cell - shift - camX), (float) (baseY - camY),
+        cloudOffset.set((float) (drawn.anchorX() * cell - shift - camX), (float) (baseY - camY),
                 (float) (drawn.anchorZ() * cell - camZ));
-        shader.safeGetUniform("FadeRange").set(reach * FADE_START, reach);
-        shader.safeGetUniform("FogTint").set(Mth.lerp(WeatherStorms.fogK(), Mth.clamp((float) StoryCloudConfig.fogFade, 0F, 1F), 1F));
+        fadeRange.set(reach * FADE_START, reach);
+        fogTint.set(Mth.lerp(WeatherStorms.fogK(), Mth.clamp((float) StoryCloudConfig.fogFade, 0F, 1F), 1F));
         float angle = level.getTimeOfDay(partialTick) * Mth.TWO_PI;
         float sunX = -Mth.sin(angle);
         float sunY = Mth.cos(angle);
         boolean day = sunY > -0.1F;
         float light = day ? SkyGlow.smooth(-0.1F, 0.25F, sunY) : 0.25F * SkyGlow.smooth(0.1F, 0.4F, -sunY);
         float warmth = day ? (1F - SkyGlow.smooth(0.08F, 0.4F, sunY)) * SkyGlow.smooth(-0.12F, 0.02F, sunY) : 0F;
-        shader.safeGetUniform("SunDir").set(day ? sunX : -sunX, day ? sunY : -sunY, 0F);
-        Vec3 sky = level.getSkyColor(new Vec3(camX, camY, camZ), partialTick);
-        shader.safeGetUniform("SkyTint").set((float) sky.x, (float) sky.y, (float) sky.z, VividSky.on() ? VividSky.strength() * 0.85F : 0F);
-        shader.safeGetUniform("CellSize").set((float) cell);
-        shader.safeGetUniform("Light").set(StoryCloudConfig.lighting ? 1F : 0F, light * (1F - 0.7F * level.getRainLevel(partialTick)), warmth, drawn.shaded() ? 1F : 0.4F);
+        sunDir.set(day ? sunX : -sunX, day ? sunY : -sunY, 0F);
+        Vec3 sky = ViewCapture.skyColor(level, Minecraft.getInstance().gameRenderer.getMainCamera().getPosition(), partialTick);
+        skyTint.set((float) sky.x, (float) sky.y, (float) sky.z, VividSky.on() ? VividSky.strength() * 0.85F : 0F);
+        cellSize.set((float) cell);
+        lightUniform.set(StoryCloudConfig.lighting ? 1F : 0F, light * (1F - 0.7F * level.getRainLevel(partialTick)), warmth, drawn.shaded() ? 1F : 0.4F);
         boolean blur = StoryCloudConfig.softEdges > 0.0 && CloudBlur.ready()
                 && GL11.glGetInteger(GL30.GL_FRAMEBUFFER_BINDING) == Minecraft.getInstance().getMainRenderTarget().frameBufferId;
         LAYERS[0] = baseY - (float) camY;
@@ -176,9 +182,9 @@ public final class StoryClouds {
             r = Mth.lerp(bright, Mth.lerp(night, r, moon * 0.8F), hr);
             g = Mth.lerp(bright, Mth.lerp(night, g, moon * 0.9F), hg * Mth.lerp(warmth, 1F, 0.86F));
             b = Mth.lerp(bright, Mth.lerp(night, b, moon * 1.35F), hb * Mth.lerp(warmth, 1F, 0.8F));
-            shader.safeGetUniform("Pastel").set(1F, Mth.lerp(warmth, 0.68F, 0.5F) * Mth.lerp(night, 1F, 0.6F), 0.06F, blur ? 1F : 0F);
+            pastelUniform.set(1F, Mth.lerp(warmth, 0.68F, 0.5F) * Mth.lerp(night, 1F, 0.6F), 0.06F, blur ? 1F : 0F);
         } else {
-            shader.safeGetUniform("Pastel").set(0F, 1F, 0F, blur ? 1F : 0F);
+            pastelUniform.set(0F, 1F, 0F, blur ? 1F : 0F);
         }
 
         draw(pose.last().pose(), projection, r, g, b, blur);
@@ -202,18 +208,24 @@ public final class StoryClouds {
         if (shader.PROJECTION_MATRIX != null) shader.PROJECTION_MATRIX.set(projection);
         if (shader.COLOR_MODULATOR != null) shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
         if (shader.FOG_COLOR != null) shader.FOG_COLOR.set(RenderSystem.getShaderFogColor());
-        shader.safeGetUniform("DepthPass").set(1F);
+        depthPass.set(1F);
         shader.apply();
         buffer.bind();
         RenderSystem.colorMask(false, false, false, false);
+        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
+        CaptureHook.probeBegin("cloud_depth");
         buffer.draw();
+        CaptureHook.probeEnd("cloud_depth");
+        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
         RenderSystem.colorMask(true, true, true, true);
         RenderSystem.depthMask(false);
-        shader.safeGetUniform("DepthPass").set(0F);
-        shader.apply();
+        depthPass.set(0F);
+        if (depthPass instanceof Uniform uniform) uniform.upload();
         if (blur) RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
                 GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        CaptureHook.probeBegin("cloud_color");
         buffer.draw();
+        CaptureHook.probeEnd("cloud_color");
         RenderSystem.depthMask(true);
         shader.clear();
         VertexBuffer.unbind();
@@ -414,46 +426,58 @@ public final class StoryClouds {
         float cell = shape.cell();
         float thickness = shape.thickness();
         float limitSq = limit * limit;
-        for (int z = 0; z < span; z++) {
-            for (int x = 0; x < span; x++) {
-                float height = grid[z * span + x];
-                if (height <= 0F) {
-                    continue;
-                }
-                float x0 = (x - radius) * cell;
-                float z0 = (z - radius) * cell;
-                float centerX = x0 + cell * 0.5F;
-                float centerZ = z0 + cell * 0.5F;
-                if (centerX * centerX + centerZ * centerZ > limitSq) {
-                    continue;
-                }
-                float x1 = x0 + cell;
-                float z1 = z0 + cell;
-                float y1 = y0 + thickness * height;
-                int edges = (empty(grid, span, x - 1, z) ? 1 : 0) | (empty(grid, span, x + 1, z) ? 2 : 0)
-                        | (empty(grid, span, x, z - 1) ? 4 : 0) | (empty(grid, span, x, z + 1) ? 8 : 0);
-                OPEN[0] = OPEN[1] = OPEN[2] = OPEN[3] = edges / 15F;
-                quad(out, TOP, shape.topAlpha(), y0, thickness, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1);
-                quad(out, BOTTOM, shape.bottomAlpha(), y0, thickness, x0, y0, z1, x1, y0, z1, x1, y0, z0, x0, y0, z0);
-                OPEN[0] = OPEN[1] = OPEN[2] = OPEN[3] = 0F;
-                float west = sideBase(grid, span, x - 1, z, y0, thickness);
-                if (west < y1) {
-                    quad(out, WEST, shape.alpha(), y0, thickness, x0, west, z0, x0, west, z1, x0, y1, z1, x0, y1, z0);
-                }
-                float east = sideBase(grid, span, x + 1, z, y0, thickness);
-                if (east < y1) {
-                    quad(out, EAST, shape.alpha(), y0, thickness, x1, east, z1, x1, east, z0, x1, y1, z0, x1, y1, z1);
-                }
-                float north = sideBase(grid, span, x, z - 1, y0, thickness);
-                if (north < y1) {
-                    quad(out, NORTH, shape.alpha(), y0, thickness, x1, north, z0, x0, north, z0, x0, y1, z0, x1, y1, z0);
-                }
-                float south = sideBase(grid, span, x, z + 1, y0, thickness);
-                if (south < y1) {
-                    quad(out, SOUTH, shape.alpha(), y0, thickness, x0, south, z1, x1, south, z1, x1, y1, z1, x0, y1, z1);
-                }
+        for (int cellIndex : nearFirst(span)) {
+            int x = cellIndex % span;
+            int z = cellIndex / span;
+            float height = grid[cellIndex];
+            if (height <= 0F) {
+                continue;
+            }
+            float x0 = (x - radius) * cell;
+            float z0 = (z - radius) * cell;
+            float centerX = x0 + cell * 0.5F;
+            float centerZ = z0 + cell * 0.5F;
+            if (centerX * centerX + centerZ * centerZ > limitSq) {
+                continue;
+            }
+            float x1 = x0 + cell;
+            float z1 = z0 + cell;
+            float y1 = y0 + thickness * height;
+            int edges = (empty(grid, span, x - 1, z) ? 1 : 0) | (empty(grid, span, x + 1, z) ? 2 : 0)
+                    | (empty(grid, span, x, z - 1) ? 4 : 0) | (empty(grid, span, x, z + 1) ? 8 : 0);
+            OPEN[0] = OPEN[1] = OPEN[2] = OPEN[3] = edges / 15F;
+            quad(out, TOP, shape.topAlpha(), y0, thickness, x0, y1, z0, x1, y1, z0, x1, y1, z1, x0, y1, z1);
+            quad(out, BOTTOM, shape.bottomAlpha(), y0, thickness, x0, y0, z1, x1, y0, z1, x1, y0, z0, x0, y0, z0);
+            OPEN[0] = OPEN[1] = OPEN[2] = OPEN[3] = 0F;
+            float west = sideBase(grid, span, x - 1, z, y0, thickness);
+            if (west < y1) {
+                quad(out, WEST, shape.alpha(), y0, thickness, x0, west, z0, x0, west, z1, x0, y1, z1, x0, y1, z0);
+            }
+            float east = sideBase(grid, span, x + 1, z, y0, thickness);
+            if (east < y1) {
+                quad(out, EAST, shape.alpha(), y0, thickness, x1, east, z1, x1, east, z0, x1, y1, z0, x1, y1, z1);
+            }
+            float north = sideBase(grid, span, x, z - 1, y0, thickness);
+            if (north < y1) {
+                quad(out, NORTH, shape.alpha(), y0, thickness, x1, north, z0, x0, north, z0, x0, y1, z0, x1, y1, z0);
+            }
+            float south = sideBase(grid, span, x, z + 1, y0, thickness);
+            if (south < y1) {
+                quad(out, SOUTH, shape.alpha(), y0, thickness, x0, south, z1, x1, south, z1, x1, y1, z1, x0, y1, z1);
             }
         }
+    }
+
+    private static int[] nearFirst(int span) {
+        if (nearFirst != null && nearFirstSpan == span) return nearFirst;
+        int centre = span / 2;
+        nearFirst = java.util.stream.IntStream.range(0, span * span).boxed()
+                .sorted(java.util.Comparator.comparingInt(i -> {
+                    int dx = i % span - centre, dz = i / span - centre;
+                    return dx * dx + dz * dz;
+                })).mapToInt(Integer::intValue).toArray();
+        nearFirstSpan = span;
+        return nearFirst;
     }
 
     private static boolean empty(float[] grid, int span, int x, int z) {
@@ -490,7 +514,18 @@ public final class StoryClouds {
         public static void onRegisterCloudShaders(RegisterShadersEvent event) throws IOException {
             event.registerShader(new ShaderInstance(event.getResourceProvider(),
                     new ResourceLocation(Let_there_be_atmosphere.MODID, "story_clouds"), DefaultVertexFormat.POSITION_COLOR),
-                    loaded -> shader = loaded);
+                    loaded -> {
+                        cloudOffset = loaded.safeGetUniform("CloudOffset");
+                        fadeRange = loaded.safeGetUniform("FadeRange");
+                        fogTint = loaded.safeGetUniform("FogTint");
+                        sunDir = loaded.safeGetUniform("SunDir");
+                        skyTint = loaded.safeGetUniform("SkyTint");
+                        cellSize = loaded.safeGetUniform("CellSize");
+                        lightUniform = loaded.safeGetUniform("Light");
+                        pastelUniform = loaded.safeGetUniform("Pastel");
+                        depthPass = loaded.safeGetUniform("DepthPass");
+                        shader = loaded;
+                    });
             event.registerShader(new ShaderInstance(event.getResourceProvider(),
                     new ResourceLocation(Let_there_be_atmosphere.MODID, "clouds_far"), DefaultVertexFormat.POSITION_COLOR),
                     loaded -> farShader = loaded);

@@ -11,6 +11,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -33,6 +34,11 @@ public final class WaterReflections {
     private static TextureTarget scene;
     private static TextureTarget reflect;
     private static TextureTarget near;
+    private static TextureTarget nearDepth;
+    private static TextureTarget tilesWide;
+    private static TextureTarget tiles;
+    private static final int TILE = 16;
+    private static int rows;
     private static boolean armed;
     private static boolean taken;
     private static float open = -1F;
@@ -45,9 +51,6 @@ public final class WaterReflections {
     private static int queries = -1;
     private static int idleFrames;
     private static long probedAt;
-    public static boolean masked = true;
-    public static boolean gather = true;
-    private static boolean shrunk;
     private static final Matrix4f FRESH_VIEW_PROJECTION = new Matrix4f();
     private static final Matrix4f REPROJECT = new Matrix4f();
     private static double freshX, freshY, freshZ;
@@ -59,24 +62,29 @@ public final class WaterReflections {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) return;
         armed = false;
         taken = false;
-        shrunk = false;
         String why = !FxConfig.waterReflections || FxConfig.waterReflectionStrength <= 0.0 ? "disabled"
                 : !DynamicFogHandler.active() || ColorGrade.shaderPackActive() ? "fog handler off or a shader pack owns the image"
                 : Minecraft.useShaderTransparency() ? "Fabulous graphics keeps water in its own layer"
-                : !SkyProgram.WATER_REFLECT.ready() || !SkyProgram.WATER_REFLECT_MIX.ready() || !SkyProgram.WATER_REFLECT_NEAR.ready() ? "shader failed to load, see the log" : null;
+                : !SkyProgram.WATER_REFLECT.ready() || !SkyProgram.WATER_REFLECT_MIX.ready() || !SkyProgram.WATER_REFLECT_NEAR.ready()
+                || !SkyProgram.WATER_REFLECT_DEPTH.ready() || !SkyProgram.WATER_COPY.ready() || !SkyProgram.WATER_TILES.ready() ? "shader failed to load, see the log" : null;
         if (why != null) {
             Diagnostics.skip(Diagnostics.REFLECTIONS, why);
             return;
         }
         if (SkyGate.air(event, Diagnostics.REFLECTIONS) == null) return;
+        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        rows = waterRows(event, (main.height + 1) / 2);
+        if (rows == 0) {
+            Diagnostics.skip(Diagnostics.REFLECTIONS, "looking above the horizon");
+            return;
+        }
         if (!waterLikely()) {
             Diagnostics.skip(Diagnostics.REFLECTIONS, "no water on screen");
             return;
         }
         CaptureHook.probeBegin("reflect_copy");
-        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
         solid = fit(solid, main, true);
-        solid.copyDepthFrom(main);
+        blit(main, solid, GL11.GL_DEPTH_BUFFER_BIT, Math.min(rows * 2, main.height));
         main.bindWrite(false);
         CaptureHook.probeEnd("reflect_copy");
         armed = true;
@@ -84,28 +92,22 @@ public final class WaterReflections {
 
     public static void onRenderReflectionWaterStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS || !armed) return;
-        CaptureHook.probeBegin("reflect_water");
         RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
         water = fit(water, main, false);
-        if (masked && SkyProgram.WATER_COPY.ready()) {
-            shrink(main);
-            water.bindWrite(true);
-            RenderSystem.disableDepthTest();
-            RenderSystem.depthMask(false);
-            SkyProgram copy = SkyProgram.WATER_COPY;
-            copy.begin();
-            SkyProgram.texture(1, near.getColorTextureId());
-            SkyProgram.texture(0, main.getColorTextureId());
-            copy.draw(3);
-            copy.end();
-            RenderSystem.depthMask(true);
-            RenderSystem.enableDepthTest();
-            main.bindWrite(true);
-            shrunk = true;
-        } else {
-            blit(main, water, GL11.GL_COLOR_BUFFER_BIT);
-            main.bindWrite(false);
-        }
+        CaptureHook.probeBegin("reflect_near");
+        mask(main);
+        CaptureHook.probeEnd("reflect_near");
+        CaptureHook.probeBegin("reflect_water");
+        water.bindWrite(true);
+        SkyProgram copy = SkyProgram.WATER_COPY;
+        copy.begin();
+        SkyProgram.texture(1, near.getColorTextureId());
+        SkyProgram.texture(0, main.getColorTextureId());
+        tiles(copy, 0, 2, main.width / 2F, main.height / 2F);
+        copy.end();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+        main.bindWrite(true);
         CaptureHook.probeEnd("reflect_water");
         float[] fog = RenderSystem.getShaderFogColor();
         System.arraycopy(fog, 0, FOG, 0, 3);
@@ -126,9 +128,6 @@ public final class WaterReflections {
         RenderTarget main = mc.getMainRenderTarget();
         Vec3 eye = event.getCamera().getPosition();
         float partialTick = event.getPartialTick();
-        Vec3 sky = level.getSkyColor(eye, partialTick);
-        float time = (CaveMotes.now() % 3600F);
-        float rough = 0.035F + 0.05F * Puddles.raining();
         float spread = 2F / (ViewCapture.PROJECTION.m11() * main.height);
         CaptureHook.probeBegin("reflect_ssr");
         boolean live = ColorGrade.inPlace();
@@ -137,50 +136,51 @@ public final class WaterReflections {
             frame = main.getColorTextureId();
         } else {
             scene = fit(scene, main, false);
-            blit(main, scene, GL11.GL_COLOR_BUFFER_BIT);
+            blit(main, scene, GL11.GL_COLOR_BUFFER_BIT, main.height);
             frame = scene.getColorTextureId();
         }
         int halfWidth = (main.width + 1) / 2;
         int halfHeight = (main.height + 1) / 2;
-        if (!shrunk) shrink(main);
-        shrunk = false;
         reflect = fitHalf(reflect, halfWidth, halfHeight);
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
-        program.begin();
-        SkyProgram.texture(5, near.getColorTextureId());
-        SkyProgram.texture(4, near.getDepthTextureId());
-        SkyProgram.texture(3, Haze.noiseTexture());
-        SkyProgram.texture(2, solid.getDepthTextureId());
-        SkyProgram.texture(1, main.getDepthTextureId());
-        SkyProgram.texture(0, frame);
-        int linear = live ? ColorGrade.sceneSampler() : 0;
-        if (linear != 0) GL33.glBindSampler(0, linear);
-        ViewCapture.INVERSE.get(MATRIX);
-        GL20.glUniformMatrix4fv(program.uniform(0), false, MATRIX);
-        ViewCapture.VIEW_PROJECTION.get(MATRIX);
-        GL20.glUniformMatrix4fv(program.uniform(1), false, MATRIX);
-        GL20.glUniform4f(program.uniform(2), (float) (eye.y - Math.floor(eye.y)),
-                (float) FxConfig.waterReflectionStrength * (1F - 0.3F * Puddles.raining()), ViewCapture.fogStart, ViewCapture.fogEnd);
-        GL20.glUniform4f(program.uniform(3), (float) (eye.x - Math.floor(eye.x / 16.0) * 16.0),
-                (float) (eye.z - Math.floor(eye.z / 16.0) * 16.0), time, rough);
-        GL20.glUniform4f(program.uniform(4), FOG[0], FOG[1], FOG[2], open(level, eye));
-        GL20.glUniform4f(program.uniform(5), (float) sky.x, (float) sky.y, (float) sky.z, spread);
-        GL20.glUniform1f(program.uniform(6), masked ? 1F : 0F);
         double dx = eye.x - freshX, dy = eye.y - freshY, dz = eye.z - freshZ;
         boolean reuse = !Cadence.due(freshAge, Cadence.interval() * 3 / 4) && freshWidth == halfWidth && freshLevel == level
                 && dx * dx + dy * dy + dz * dz < 4.0;
         if (reuse) {
             freshAge++;
         } else {
+            depth(main, halfWidth, halfHeight);
+            Vec3 sky = ViewCapture.skyColor(level, eye, partialTick);
+            program.begin();
+            SkyProgram.texture(5, near.getColorTextureId());
+            SkyProgram.texture(4, nearDepth.getColorTextureId());
+            SkyProgram.texture(3, Haze.noiseTexture());
+            SkyProgram.texture(2, solid.getDepthTextureId());
+            SkyProgram.texture(1, main.getDepthTextureId());
+            SkyProgram.texture(0, frame);
+            int linear = live ? ColorGrade.sceneSampler() : 0;
+            if (linear != 0) GL33.glBindSampler(0, linear);
+            ViewCapture.INVERSE.get(MATRIX);
+            GL20.glUniformMatrix4fv(program.uniform(0), false, MATRIX);
+            ViewCapture.VIEW_PROJECTION.get(MATRIX);
+            GL20.glUniformMatrix4fv(program.uniform(1), false, MATRIX);
+            GL20.glUniform4f(program.uniform(2), (float) (eye.y - Math.floor(eye.y)),
+                    (float) FxConfig.waterReflectionStrength * (1F - 0.3F * Puddles.raining()), ViewCapture.fogStart, ViewCapture.fogEnd);
+            GL20.glUniform4f(program.uniform(3), (float) (eye.x - Math.floor(eye.x / 16.0) * 16.0),
+                    (float) (eye.z - Math.floor(eye.z / 16.0) * 16.0), CaveMotes.now() % 3600F, 0.035F + 0.05F * Puddles.raining());
+            GL20.glUniform4f(program.uniform(4), FOG[0], FOG[1], FOG[2], open(level, eye));
+            GL20.glUniform4f(program.uniform(5), (float) sky.x, (float) sky.y, (float) sky.z, spread);
             reflect.setClearColor(0F, 0F, 0F, 0F);
             reflect.clear(Minecraft.ON_OSX);
             reflect.bindWrite(true);
             int query = seenQuery();
             if (query != 0) GL15.glBeginQuery(GL33.GL_ANY_SAMPLES_PASSED, query);
-            program.draw(3);
+            tiles(program, 6, 6, near.width, near.height);
             if (query != 0) GL15.glEndQuery(GL33.GL_ANY_SAMPLES_PASSED);
+            if (linear != 0) GL33.glBindSampler(0, 0);
+            program.end();
             FRESH_VIEW_PROJECTION.set(ViewCapture.VIEW_PROJECTION);
             freshX = eye.x;
             freshY = eye.y;
@@ -189,8 +189,6 @@ public final class WaterReflections {
             freshWidth = halfWidth;
             freshLevel = level;
         }
-        if (linear != 0) GL33.glBindSampler(0, 0);
-        program.end();
         CaptureHook.probeEnd("reflect_ssr");
         CaptureHook.probeBegin("reflect_mix");
         SkyProgram resolve = SkyProgram.WATER_REFLECT_MIX;
@@ -206,14 +204,13 @@ public final class WaterReflections {
         ViewCapture.INVERSE.get(MATRIX);
         GL20.glUniformMatrix4fv(resolve.uniform(0), false, MATRIX);
         GL20.glUniform4f(resolve.uniform(1), spread, main.height, (float) (eye.y - Math.floor(eye.y)), 0F);
-        GL20.glUniform1f(resolve.uniform(2), masked ? 1F : 0F);
-        GL20.glUniform1f(resolve.uniform(4), reuse ? 1F : 0F);
+        GL20.glUniform1f(resolve.uniform(3), reuse ? 1F : 0F);
         if (reuse) {
             REPROJECT.set(FRESH_VIEW_PROJECTION).translate((float) dx, (float) dy, (float) dz).mul(ViewCapture.INVERSE).get(MATRIX);
-            GL20.glUniformMatrix4fv(resolve.uniform(3), false, MATRIX);
+            GL20.glUniformMatrix4fv(resolve.uniform(2), false, MATRIX);
         }
         if (live) ColorGrade.barrier();
-        resolve.draw(3);
+        tiles(resolve, 4, 6, main.width / 2F, main.height / 2F);
         resolve.end();
         RenderSystem.colorMask(true, true, true, true);
         RenderSystem.depthMask(true);
@@ -224,30 +221,75 @@ public final class WaterReflections {
                 ? String.format("strength %.2f sky %.2f", FxConfig.waterReflectionStrength, open) : null);
     }
 
-    private static void shrink(RenderTarget main) {
+    private static int waterRows(RenderLevelStageEvent event, int halfHeight) {
+        Matrix4f m = REPROJECT.set(event.getProjectionMatrix()).mul(event.getPoseStack().last().pose());
+        float highest = Float.NEGATIVE_INFINITY;
+        for (int edge = -1; edge <= 1; edge += 2) {
+            float a = m.m00() - edge * m.m03(), b = m.m20() - edge * m.m23();
+            float c = b, s = -a;
+            float w = m.m03() * c + m.m23() * s;
+            if (w < 0F) {
+                c = -c;
+                s = -s;
+                w = -w;
+            }
+            if (w < 1.0E-6F) return halfHeight;
+            highest = Math.max(highest, (m.m01() * c + m.m21() * s) / w);
+        }
+        return Mth.clamp((int) Math.ceil((highest * 0.5F + 0.5F) * halfHeight) + 2, 0, halfHeight);
+    }
+
+    private static void mask(RenderTarget main) {
         int halfWidth = (main.width + 1) / 2;
         int halfHeight = (main.height + 1) / 2;
-        if (near == null) {
-            near = new TextureTarget(halfWidth, halfHeight, true, Minecraft.ON_OSX);
-        } else if (near.width != halfWidth || near.height != halfHeight) {
-            near.resize(halfWidth, halfHeight, Minecraft.ON_OSX);
-        }
-        near.bindWrite(true);
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(GL11.GL_ALWAYS);
-        RenderSystem.depthMask(true);
+        near = fitHalf(near, halfWidth, halfHeight);
+        tilesWide = fitHalf(tilesWide, (halfWidth + 3) / 4, (halfHeight + 3) / 4);
+        tiles = fitHalf(tiles, (tilesWide.width + 3) / 4, (tilesWide.height + 3) / 4);
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
         RenderSystem.disableBlend();
-        if (!masked) RenderSystem.colorMask(false, false, false, false);
+        near.setClearColor(0F, 0F, 0F, 0F);
+        near.clear(Minecraft.ON_OSX);
+        near.bindWrite(true);
+        RenderSystem.enableScissor(0, 0, halfWidth, rows);
         SkyProgram program = SkyProgram.WATER_REFLECT_NEAR;
         program.begin();
         SkyProgram.texture(1, main.getDepthTextureId());
         SkyProgram.texture(0, solid.getDepthTextureId());
-        GL20.glUniform1f(program.uniform(0), masked ? 1F : 0F);
-        GL20.glUniform1f(program.uniform(1), gather && ColorGrade.gatherSupported() ? 1F : 0F);
         program.draw(3);
         program.end();
-        RenderSystem.colorMask(true, true, true, true);
-        RenderSystem.depthFunc(GL11.GL_LEQUAL);
+        RenderSystem.disableScissor();
+        SkyProgram reduce = SkyProgram.WATER_TILES;
+        reduce.begin();
+        tilesWide.bindWrite(true);
+        SkyProgram.texture(0, near.getColorTextureId());
+        reduce.draw(3);
+        tiles.bindWrite(true);
+        SkyProgram.texture(0, tilesWide.getColorTextureId());
+        reduce.draw(3);
+        reduce.end();
+    }
+
+    private static void depth(RenderTarget main, int halfWidth, int halfHeight) {
+        if (nearDepth == null || nearDepth.width != halfWidth || nearDepth.height != halfHeight) {
+            nearDepth = fitHalf(nearDepth, halfWidth, halfHeight);
+            GlStateManager._bindTexture(nearDepth.getColorTextureId());
+            GlStateManager._texImage2D(GL11.GL_TEXTURE_2D, 0, GL30.GL_R32F, halfWidth, halfHeight, 0, GL11.GL_RED, GL11.GL_FLOAT, null);
+        }
+        nearDepth.bindWrite(true);
+        SkyProgram program = SkyProgram.WATER_REFLECT_DEPTH;
+        program.begin();
+        SkyProgram.texture(1, main.getDepthTextureId());
+        SkyProgram.texture(0, solid.getDepthTextureId());
+        GL20.glUniform1f(program.uniform(0), rows);
+        program.draw(3);
+        program.end();
+    }
+
+    private static void tiles(SkyProgram program, int uniform, int unit, float width, float height) {
+        SkyProgram.texture(unit, tiles.getColorTextureId());
+        GL20.glUniform4f(program.uniform(uniform), tiles.width, tiles.height, TILE / width, TILE / height);
+        program.draw(tiles.width * tiles.height * 6);
     }
 
     private static boolean waterLikely() {
@@ -301,10 +343,10 @@ public final class WaterReflections {
         return open;
     }
 
-    private static void blit(RenderTarget from, RenderTarget to, int bits) {
+    private static void blit(RenderTarget from, RenderTarget to, int bits, int rows) {
         GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, from.frameBufferId);
         GlStateManager._glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, to.frameBufferId);
-        GlStateManager._glBlitFrameBuffer(0, 0, from.width, from.height, 0, 0, to.width, to.height, bits, GL11.GL_NEAREST);
+        GlStateManager._glBlitFrameBuffer(0, 0, from.width, rows, 0, 0, to.width, rows, bits, GL11.GL_NEAREST);
     }
 
     private static TextureTarget fitHalf(TextureTarget target, int width, int height) {

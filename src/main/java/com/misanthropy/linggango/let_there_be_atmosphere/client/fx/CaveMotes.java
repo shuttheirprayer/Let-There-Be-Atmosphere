@@ -147,7 +147,7 @@ public final class CaveMotes {
         SkyProgram program = SkyProgram.CAVE_MOTES;
         if (!program.ready() || !resolve()) return;
 
-        drift(event.getPartialTick(), event.getCamera().getPosition().y);
+        if (Cadence.step()) drift(event.getPartialTick(), event.getCamera().getPosition().y);
         upload();
         Camera camera = event.getCamera();
         Vec3 eye = camera.getPosition();

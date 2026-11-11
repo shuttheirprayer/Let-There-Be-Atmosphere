@@ -222,13 +222,15 @@ public final class ColorGrade {
             float dimSaturation = Math.min(saturation, 1F - (float) FxConfig.gradeDimFade);
             GL20.glUniform4f(gradeUniform, Mth.lerp(dark, saturation, dimSaturation), (float) FxConfig.gradeContrast,
                     (float) FxConfig.gradeDarkDesaturation * dark, (float) FxConfig.gradeVibrance * (1F - dark));
-            GL20.glUniform4f(skyGradeUniform, saturation, 0F, 0F, 0F);
+            float rim = (float) FxConfig.gradeDimVignette * dark;
+            float rimStart = Mth.lerp(rim, 0.35F, 0F);
+            GL20.glUniform4f(skyGradeUniform, saturation, rimStart, 1F / (Mth.lerp(rim, 1F, 0.7F) - rimStart),
+                    sun != 0 && (haze || mirror || SunPass.mistReady || dark > 0F) ? 1F : 0F);
             GL20.glUniform3f(tintUniform, 1F + 0.06F * warmth, 1F + 0.012F * warmth, 1F - 0.06F * warmth);
-            GL20.glUniform3f(vignetteUniform, Math.min((float) (FxConfig.gradeVignette + FxConfig.gradeDimVignette * dark), 1F),
-                    aspect, (float) FxConfig.gradeDimVignette * dark);
+            GL20.glUniform3f(vignetteUniform, Math.min((float) (FxConfig.gradeVignette + rim), 1F), aspect, rim);
         } else {
             GL20.glUniform4f(gradeUniform, 1F, 0F, 0F, 0F);
-            GL20.glUniform4f(skyGradeUniform, 1F, 0F, 0F, 0F);
+            GL20.glUniform4f(skyGradeUniform, 1F, 0F, 0F, sun != 0 && (haze || mirror || SunPass.mistReady) ? 1F : 0F);
             GL20.glUniform3f(tintUniform, 1F, 1F, 1F);
             GL20.glUniform3f(vignetteUniform, 0F, aspect, 0F);
         }
@@ -353,16 +355,6 @@ public final class ColorGrade {
         GlStateManager._texParameter(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, mode);
     }
 
-    private static int gatherState = -1;
-
-    static boolean gatherSupported() {
-        if (gatherState < 0) {
-            GLCapabilities caps = GL.getCapabilities();
-            gatherState = caps.OpenGL40 || caps.GL_ARB_texture_gather ? 1 : 0;
-        }
-        return gatherState == 1;
-    }
-
     static boolean inPlace() {
         if (barrier < 0) {
             GLCapabilities caps = GL.getCapabilities();
@@ -420,6 +412,7 @@ public final class ColorGrade {
         dimAt = now;
         float rate = target > dim ? 0.6F : 2.5F;
         dim += (target - dim) * (1F - (float) Math.exp(-dt * rate));
+        if (target == 0F && dim < 0.001F) dim = 0F;
         return dim;
     }
 

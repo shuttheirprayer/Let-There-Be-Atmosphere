@@ -21,6 +21,8 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
 @OnlyIn(Dist.CLIENT)
@@ -49,6 +51,8 @@ public final class SkyGlow {
     private static final Vector3f AXIS_V = new Vector3f(0F, 1F, 0F);
     private static final float[] SUNSET = new float[4];
     private static final Matrix4f IDENTITY = new Matrix4f();
+    private static final Matrix4f CLIP = new Matrix4f();
+    private static final Vector4f CORNER = new Vector4f();
     private static final float[] QUAD_CENTER = new float[24];
     private static final float[] QUAD_SIZE = new float[24];
     private static final float[] QUAD_TINT = new float[24];
@@ -56,7 +60,7 @@ public final class SkyGlow {
     private static float burst;
 
     public static void onRenderSkyStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_SKY) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) return;
         if (!DynamicFogHandler.active() || (!FxConfig.skyGlowEnabled && !FxConfig.sunBurst)) {
             Diagnostics.skip(Diagnostics.GLOW, "disabled");
             return;
@@ -163,7 +167,7 @@ public final class SkyGlow {
 
     private static void draw(ResourceLocation texture, float opacity, boolean layered) {
         SkyProgram program = SkyProgram.GLOW;
-        if (quads == 0 || !program.ready()) return;
+        if (quads == 0 || !program.ready() || !onScreen(layered ? 1 : quads)) return;
 
         RenderSystem.setShaderTexture(0, texture);
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
@@ -179,6 +183,8 @@ public final class SkyGlow {
                     GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
         }
         RenderSystem.depthMask(false);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(GL11.GL_LEQUAL);
         program.begin();
         SkyProgram.texture(0, SkyProgram.texture(texture));
         program.transform(0, IDENTITY);
@@ -193,6 +199,28 @@ public final class SkyGlow {
         RenderSystem.depthMask(true);
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableBlend();
+    }
+
+    private static boolean onScreen(int count) {
+        CLIP.set(RenderSystem.getProjectionMatrix()).mul(RenderSystem.getModelViewMatrix());
+        for (int quad = 0; quad < count; quad++) {
+            int o = quad * 4;
+            float hx = QUAD_SIZE[o], hy = QUAD_SIZE[o + 1], c = QUAD_SIZE[o + 2], s = QUAD_SIZE[o + 3];
+            int left = 0, right = 0, low = 0, high = 0, behind = 0;
+            for (int corner = 0; corner < 4; corner++) {
+                float sa = (corner & 1) == 0 ? -1F : 1F, sb = (corner & 2) == 0 ? -1F : 1F;
+                float u = sa * hx * c - sb * hy * s, v = sa * hx * s + sb * hy * c;
+                CLIP.transform(CORNER.set(QUAD_CENTER[o] + u * AXIS_U.x + v * AXIS_V.x,
+                        QUAD_CENTER[o + 1] + u * AXIS_U.y + v * AXIS_V.y, QUAD_CENTER[o + 2] + u * AXIS_U.z + v * AXIS_V.z, 1F));
+                if (CORNER.x < -CORNER.w) left++;
+                if (CORNER.x > CORNER.w) right++;
+                if (CORNER.y < -CORNER.w) low++;
+                if (CORNER.y > CORNER.w) high++;
+                if (CORNER.w <= 0F) behind++;
+            }
+            if (left < 4 && right < 4 && low < 4 && high < 4 && behind < 4) return true;
+        }
+        return false;
     }
 
     static void add(float width, float height, float cos, float sin, float u,

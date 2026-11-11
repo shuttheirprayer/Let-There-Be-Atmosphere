@@ -690,6 +690,8 @@ public final class Litter {
     public static void onRenderLitterStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_CUTOUT_BLOCKS) return;
         if (!anchored || LightTint.lightmap == null) return;
+        boolean ground = grounded > 0 || LitterMotion.count() > 0;
+        if (!ground && FallingLeaves.count() == 0) return;
         SkyProgram program = SkyProgram.LITTER;
         if (!program.ready()) return;
 
@@ -715,13 +717,17 @@ public final class Litter {
         GL20.glUniform4f(program.uniform(2), now(), RenderSystem.getShaderFogStart(), RenderSystem.getShaderFogEnd(), 0F);
         float[] fog = RenderSystem.getShaderFogColor();
         GL20.glUniform4f(program.uniform(3), fog[0], fog[1], fog[2], CULL);
-        program.draw(SOLID_BASE * 6);
-        GL20.glUniform4f(program.uniform(2), now(), RenderSystem.getShaderFogStart(), RenderSystem.getShaderFogEnd(), 1F);
-        program.draw(GROUND * 6);
+        if (ground) {
+            program.draw(SOLID_BASE * 6);
+            GL20.glUniform4f(program.uniform(2), now(), RenderSystem.getShaderFogStart(), RenderSystem.getShaderFogEnd(), 1F);
+            program.draw(GROUND * 6);
+        } else {
+            program.drawRange(LEAF_BASE * 6, LEAVES * 6);
+        }
         program.end();
         SkyProgram solid = SkyProgram.LITTER_SOLID;
-        if (models < 0 || atlasMoved()) loadModels();
-        if (solid.ready() && modelStride > 0 && listNear(ox, oy, oz) > 0) {
+        if (ground && (models < 0 || atlasMoved())) loadModels();
+        if (ground && solid.ready() && modelStride > 0 && listNear(ox, oy, oz) > 0) {
             solid.begin();
             SkyProgram.texture(5, SkyProgram.texture(TextureAtlas.LOCATION_BLOCKS));
             SkyProgram.texture(4, pieces);

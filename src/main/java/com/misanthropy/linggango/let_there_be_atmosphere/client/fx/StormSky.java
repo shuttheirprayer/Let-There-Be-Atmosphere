@@ -100,7 +100,7 @@ public final class StormSky {
         Vec3 eye = event.getCamera().getPosition();
         float cloudHeight = level.effects().getCloudHeight();
         float base = Float.isNaN(cloudHeight) ? 192F : cloudHeight;
-        Vec3 sky = level.getSkyColor(eye, partialTick);
+        Vec3 sky = ViewCapture.skyColor(level, eye, partialTick);
         float lum = Math.max(0.03F, (float) (0.2126 * sky.x + 0.7152 * sky.y + 0.0722 * sky.z));
         float[] fog = RenderSystem.getShaderFogColor();
 

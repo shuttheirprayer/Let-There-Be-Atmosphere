@@ -26,11 +26,14 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
+const vec2 SPIRAL[10] = vec2[10](vec2(0.2236068, 0.0000000), vec2(-0.2855817, 0.2616163), vec2(0.0437128, -0.4980855), vec2(0.3599573, 0.4695005), vec2(-0.6605659, -0.1168447), vec2(0.6257456, -0.3980483), vec2(-0.2092995, 0.7785844), vec2(-0.3991574, -0.7685528), vec2(0.8660115, 0.3162658), vec2(-0.9009405, 0.3718954));
+
+ivec2 frame;
+vec4 acrossX, acrossY, acrossZ, corner;
+
 vec3 pointAt(ivec2 pixel) {
-    ivec2 size = textureSize(DepthSampler, 0);
-    pixel = clamp(pixel, ivec2(0), size - 1);
-    float d = texelFetch(DepthSampler, pixel, 0).r;
-    vec4 w = InverseTransform * vec4((vec2(pixel) + 0.5) / vec2(size) * 2.0 - 1.0, min(d, 0.9999) * 2.0 - 1.0, 1.0);
+    pixel = clamp(pixel, ivec2(0), frame - 1);
+    vec4 w = corner + acrossX * float(pixel.x) + acrossY * float(pixel.y) + acrossZ * min(texelFetch(DepthSampler, pixel, 0).r, 0.9999);
     return w.xyz / w.w;
 }
 
@@ -47,6 +50,11 @@ float columnTop(vec2 block) {
 }
 
 void main() {
+    frame = textureSize(DepthSampler, 0);
+    acrossX = InverseTransform[0] * (2.0 / float(frame.x));
+    acrossY = InverseTransform[1] * (2.0 / float(frame.y));
+    acrossZ = InverseTransform[2] * 2.0;
+    corner = InverseTransform[0] * (1.0 / float(frame.x) - 1.0) + InverseTransform[1] * (1.0 / float(frame.y) - 1.0) - InverseTransform[2] + InverseTransform[3];
     float depth = texelFetch(DepthSampler, ivec2(gl_FragCoord.xy) * 2, 0).r;
     vec4 world = InverseTransform * vec4(texCoord * 2.0 - 1.0, min(depth, 0.9999) * 2.0 - 1.0, 1.0);
     vec3 p = world.xyz / world.w;
@@ -154,10 +162,10 @@ void main() {
         float reach = clamp(Occlusion.y * Occlusion.z / max(length(c), 0.5), 2.0, 96.0);
         ivec2 phase = ivec2(gl_FragCoord.xy) & 1;
         float spin = float(phase.x + phase.y * 2) * 1.5707963 + 0.4;
+        vec2 turn = vec2(cos(spin), sin(spin)) * reach;
         float hidden = 0.0;
         for (int i = 0; i < 10; i++) {
-            float a = spin + float(i) * 2.3999632;
-            vec2 tap = vec2(cos(a), sin(a)) * reach * sqrt((float(i) + 0.5) / 10.0);
+            vec2 tap = vec2(SPIRAL[i].x * turn.x - SPIRAL[i].y * turn.y, SPIRAL[i].x * turn.y + SPIRAL[i].y * turn.x);
             vec3 v = pointAt(centre + ivec2(tap)) - c;
             float len = length(v);
             hidden += clamp(dot(n, v) / max(len, 1.0e-4) - 0.1, 0.0, 1.0) * (1.0 - smoothstep(Occlusion.y, Occlusion.y * 2.0, len));
@@ -210,6 +218,7 @@ void main() {
             vec3 start = c + n * (0.04 + length(c) * 0.004);
             vec4 clipStart = ViewProjection * vec4(start, 1.0);
             vec4 clipStep = ViewProjection * vec4(dir, 0.0);
+            vec4 deep = vec4(InverseTransform[0][3], InverseTransform[1][3], InverseTransform[2][3], InverseTransform[3][3]);
             for (int i = 0; i < 12; i++) {
                 float s = 0.3 + 4.0 * (float(i) + jitter) / 12.0;
                 vec3 q = start + dir * s;
@@ -219,10 +228,12 @@ void main() {
                 if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) break;
                 float d = texelFetch(DepthSampler, ivec2(uv * size), 0).r;
                 if (d >= 1.0) continue;
-                vec4 h = InverseTransform * vec4(clip.xy / clip.w, min(d, 0.9999) * 2.0 - 1.0, 1.0);
-                vec3 body = h.xyz / h.w;
-                float behind = length(q) - length(body);
-                float tol = 0.03 + length(q) * 0.006;
+                float nearer = 1.0 / (dot(deep, vec4(clip.xy / clip.w, min(d, 0.9999) * 2.0 - 1.0, 1.0)) * clip.w);
+                float far = length(q);
+                float behind = far * (1.0 - nearer);
+                float tol = 0.03 + far * 0.006;
+                if (behind <= tol || behind >= 1.0) continue;
+                vec3 body = q * nearer;
                 float w = smoothstep(tol, tol * 2.0, behind) * (1.0 - smoothstep(0.7, 1.0, behind)) * smoothstep(0.3, 0.6, length(body - c));
                 vec2 edge = min(uv, 1.0 - uv);
                 w *= smoothstep(0.0, 0.06, min(edge.x, edge.y));

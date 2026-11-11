@@ -256,7 +256,7 @@ public final class SunPass {
         puddleReady = puddle || wet;
         if (puddle || wet) {
             float fogR = DynamicFogHandler.fogColorR(), fogG = DynamicFogHandler.fogColorG(), fogB = DynamicFogHandler.fogColorB();
-            Vec3 skyColor = level.getSkyColor(camera, partialTick);
+            Vec3 skyColor = ViewCapture.skyColor(level, camera, partialTick);
             PUDDLE[0] = Mth.lerp(0.5F, fogR, (float) skyColor.x);
             PUDDLE[1] = Mth.lerp(0.5F, fogG, (float) skyColor.y);
             PUDDLE[2] = Mth.lerp(0.5F, fogB, (float) skyColor.z);

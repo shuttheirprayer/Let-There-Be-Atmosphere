@@ -6,7 +6,6 @@ uniform sampler2D SolidSampler;
 uniform sampler2D NoiseSampler;
 uniform sampler2D NearSampler;
 uniform sampler2D MaskSampler;
-uniform float Masked;
 uniform mat4 InverseTransform;
 uniform mat4 ViewProjection;
 uniform vec4 Surface;
@@ -65,7 +64,7 @@ float edgeFade(vec2 ndc) {
 }
 
 void main() {
-    if (Masked > 0.5 && texelFetch(MaskSampler, ivec2(gl_FragCoord.xy), 0).r < 0.5) discard;
+    if (texelFetch(MaskSampler, ivec2(gl_FragCoord.xy), 0).r < 0.5) discard;
     size = vec2(textureSize(DepthSampler, 0));
     wRow = vec4(InverseTransform[0][3], InverseTransform[1][3], InverseTransform[2][3], InverseTransform[3][3]);
     ivec2 last = ivec2(size) - 1;

@@ -1,4 +1,6 @@
 #version 150
+#extension GL_ARB_texture_gather : enable
+#extension GL_ARB_gpu_shader5 : enable
 
 uniform sampler2D DiffuseSampler;
 uniform vec4 Grade;
@@ -19,16 +21,15 @@ uniform vec4 PuddleColor;
 uniform vec4 View;
 uniform vec4 ViewTan;
 uniform vec4 Flare;
-uniform mat4 BloomReproject;
-uniform float BloomReused;
 
 in vec2 texCoord;
 flat in float seen;
+in vec3 bloomThen;
 
 out vec4 fragColor;
 
 void main() {
-    vec4 sun = texture(SunSampler, texCoord);
+    vec4 sun = SkyGrade.w > 0.5 ? texture(SunSampler, texCoord) : vec4(0.0);
     float sky = step(0.99, sun.b);
     bool hazy = Haze.x + Haze.y + Haze.z > 0.0;
     bool hand = (Shadows > 0.5 || hazy || BloomStrength > 0.0) && texelFetch(DepthSampler, ivec2(gl_FragCoord.xy), 0).r < 1.0;
@@ -55,7 +56,16 @@ void main() {
         ivec2 pixel = ivec2(gl_FragCoord.xy);
         ivec2 base = pixel / 2;
         ivec2 lean = (pixel & 1) * 2 - 1;
-        ivec2 edge = textureSize(SunSampler, 0) - 1;
+        ivec2 span = textureSize(SunSampler, 0);
+#ifdef GL_ARB_gpu_shader5
+        vec2 corner = vec2(base + min(lean, ivec2(0)) + 1) / vec2(span);
+        vec4 far = textureGather(SunSampler, corner, 3);
+        vec4 lit = textureGather(SunSampler, corner, 1);
+        float near = lean.y < 0 ? (lean.x < 0 ? far.y : far.x) : (lean.x < 0 ? far.z : far.w);
+        vec4 w = 1.0 / (1.0 + abs(far - near) * 400.0);
+        color *= dot(lit, w) / (w.x + w.y + w.z + w.w);
+#else
+        ivec2 edge = span - 1;
         float near = texelFetch(SunSampler, clamp(base, ivec2(0), edge), 0).a;
         float lit = 0.0;
         float weight = 0.0;
@@ -66,6 +76,7 @@ void main() {
             weight += w;
         }
         color *= lit / weight;
+#endif
     }
     if (PuddleColor.w > 0.5 && !hand && sun.r * (1.0 - sky) > 0.0) {
         float wet = sun.r * (1.0 - sky);
@@ -87,22 +98,24 @@ void main() {
         color = mix(color, reflection, wet * fresnel);
     }
     if (MistColor.w > 0.5 && !hand) color = mix(color, MistColor.rgb, sun.b * (1.0 - sky));
-    float noise = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5;
-    vec2 bloomCoord = texCoord;
-    if (BloomReused > 0.5) {
-        vec4 then = BloomReproject * vec4(texCoord * 2.0 - 1.0, 1.0, 1.0);
-        if (then.w > 0.0) bloomCoord = then.xy / then.w * 0.5 + 0.5;
-    }
+    float noise = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) - 0.5;
+    vec2 bloomCoord = bloomThen.z > 0.0 ? bloomThen.xy / bloomThen.z * 0.5 + 0.5 : texCoord;
     vec3 glow = texture(BloomSampler, bloomCoord).rgb * (hand ? 0.35 : 1.0);
     glow = max(mix(vec3(dot(glow, vec3(0.2126, 0.7152, 0.0722))), glow, 1.4) * BloomStrength + noise * BloomStrength / 255.0, 0.0);
     color = 1.0 - (1.0 - color) * (1.0 - min(glow, 1.0));
     if (Rays.r + Rays.g + Rays.b > 0.0) {
-        ivec2 maskEdge = textureSize(SunSampler, 0) - 1;
-        ivec2 maskBase = ivec2(floor(texCoord * vec2(maskEdge + 1) - 0.5));
+        vec2 maskSpan = vec2(textureSize(SunSampler, 0));
+        vec2 maskBase = floor(texCoord * maskSpan - 0.5);
+#ifdef GL_ARB_gpu_shader5
+        vec4 clear = textureGather(SunSampler, (maskBase + 1.0) / maskSpan, 2);
+        float open = step(0.99, max(max(clear.x, clear.y), max(clear.z, clear.w)));
+#else
+        ivec2 maskEdge = ivec2(maskSpan) - 1;
         float open = 0.0;
         for (int i = 0; i < 4; i++) {
-            open = max(open, step(0.99, texelFetch(SunSampler, clamp(maskBase + ivec2(i & 1, i >> 1), ivec2(0), maskEdge), 0).b));
+            open = max(open, step(0.99, texelFetch(SunSampler, clamp(ivec2(maskBase) + ivec2(i & 1, i >> 1), ivec2(0), maskEdge), 0).b));
         }
+#endif
         color = 1.0 - (1.0 - color) * (1.0 - min(Rays * texture(RaySampler, texCoord).r * (1.0 - 0.4 * open), 1.0));
     }
     if (Flare.z > 0.0) {
@@ -113,21 +126,28 @@ void main() {
         vec3 tint[5] = vec3[](vec3(1.0, 0.78, 0.5), vec3(0.65, 1.0, 0.75), vec3(0.55, 0.72, 1.0), vec3(1.0, 0.62, 0.86), vec3(0.72, 0.92, 1.0));
         vec3 flare = vec3(0.0);
         for (int i = 0; i < 5; i++) {
-            float d = length((texCoord - Flare.xy - axis * at[i]) * aspect) / size[i];
-            flare += tint[i] * (1.0 - smoothstep(0.8, 1.0, d)) * (0.5 + 0.5 * smoothstep(0.3, 0.95, d));
+            vec2 from = (texCoord - Flare.xy - axis * at[i]) * aspect;
+            float reach = dot(from, from) / (size[i] * size[i]);
+            if (reach < 1.0) {
+                float d = sqrt(reach);
+                flare += tint[i] * (1.0 - smoothstep(0.8, 1.0, d)) * (0.5 + 0.5 * smoothstep(0.3, 0.95, d));
+            }
         }
         color = 1.0 - (1.0 - color) * (1.0 - min(flare * Flare.z * seen * 0.08, 1.0));
     }
     float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-    float saturation = mix(Grade.x, SkyGrade.x, sky) * (1.0 - Grade.z * (1.0 - sky) * (1.0 - smoothstep(0.04, 0.3, luma)));
+    float saturation = mix(Grade.x, SkyGrade.x, sky);
+    if (Grade.z > 0.0) saturation *= 1.0 - Grade.z * (1.0 - sky) * (1.0 - smoothstep(0.04, 0.3, luma));
     float chroma = max(color.r, max(color.g, color.b)) - min(color.r, min(color.g, color.b));
     if (saturation > 1.0) saturation = 1.0 + (saturation - 1.0) * (1.0 - chroma) * (1.0 - chroma);
     float peak = max(color.r, max(color.g, color.b));
-    saturation *= 1.0 + Grade.w * (1.0 - chroma / max(peak, 0.0001)) * smoothstep(0.02, 0.2, luma);
+    if (Grade.w > 0.0) saturation *= 1.0 + Grade.w * (1.0 - chroma / max(peak, 0.0001)) * smoothstep(0.02, 0.2, luma);
     color = max(mix(vec3(luma), color, saturation), 0.0);
     color = mix(color, color * color * (3.0 - 2.0 * color), Grade.y);
     color *= Tint;
-    vec2 offset = (texCoord - 0.5) * vec2(Vignette.y, 1.0);
-    color *= 1.0 - Vignette.x * smoothstep(mix(0.35, 0.0, Vignette.z), mix(1.0, 0.7, Vignette.z), length(offset) * 1.25);
+    if (Vignette.x > 0.0) {
+        float rim = clamp((length((texCoord - 0.5) * vec2(Vignette.y, 1.0)) * 1.25 - SkyGrade.y) * SkyGrade.z, 0.0, 1.0);
+        color *= 1.0 - Vignette.x * rim * rim * (3.0 - 2.0 * rim);
+    }
     fragColor = vec4(color, 1.0);
 }

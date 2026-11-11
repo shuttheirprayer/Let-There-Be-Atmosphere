@@ -62,6 +62,7 @@ public final class GrassBlades {
     private static final int[] SLOT_Z = new int[GRID * GRID];
     private static final int[] LOW = new int[GRID * GRID];
     private static final int[] HIGH = new int[GRID * GRID];
+    private static final AABB[] BOX = new AABB[GRID * GRID];
     private static final IntBuffer FIRSTS = BufferUtils.createIntBuffer(GRID * GRID);
     private static final IntBuffer COUNTS = BufferUtils.createIntBuffer(GRID * GRID);
     private static final BlockPos.MutableBlockPos CURSOR = new BlockPos.MutableBlockPos();
@@ -198,6 +199,8 @@ public final class GrassBlades {
                 }
             }
         }
+        double x0 = cx << 4, z0 = cz << 4;
+        BOX[slot] = PLACED[slot] == 0 ? null : new AABB(x0 - 1.0, LOW[slot] - 0.5, z0 - 1.0, x0 + 17.0, HIGH[slot] + 1.6, z0 + 17.0);
         markDirty(first, first + PER_CHUNK);
     }
 
@@ -330,7 +333,7 @@ public final class GrassBlades {
             double dz = Math.max(Math.max(z0 - eye.z, eye.z - z0 - 16.0), 0.0);
             double dy = Math.max(Math.max(LOW[slot] - eye.y, eye.y - HIGH[slot] - 1.0), 0.0);
             if (dx * dx + dy * dy + dz * dz > (RADIUS + 1.0) * (RADIUS + 1.0)) continue;
-            if (!event.getFrustum().isVisible(new AABB(x0 - 1.0, LOW[slot] - 0.5, z0 - 1.0, x0 + 17.0, HIGH[slot] + 1.6, z0 + 17.0))) continue;
+            if (!event.getFrustum().isVisible(BOX[slot])) continue;
             FIRSTS.put(slot * perSlot);
             COUNTS.put(PLACED[slot] * perSlot / PER_CHUNK);
         }

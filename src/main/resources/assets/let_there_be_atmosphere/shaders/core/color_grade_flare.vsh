@@ -2,14 +2,20 @@
 
 uniform sampler2D SunSampler;
 uniform vec4 Flare;
+uniform mat4 BloomReproject;
+uniform float BloomReused;
 
 out vec2 texCoord;
 flat out float seen;
+out vec3 bloomThen;
 
 void main() {
     vec2 corner = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
     texCoord = corner;
     gl_Position = vec4(corner * 2.0 - 1.0, 0.0, 1.0);
+    vec4 then = vec4(corner * 2.0 - 1.0, 1.0, 1.0);
+    if (BloomReused > 0.5) then = BloomReproject * then;
+    bloomThen = then.xyw;
     seen = 0.0;
     if (Flare.z > 0.0) {
         for (int i = 0; i < 5; i++) {

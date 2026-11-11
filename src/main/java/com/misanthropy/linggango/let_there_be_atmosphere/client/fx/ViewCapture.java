@@ -3,6 +3,8 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 import com.misanthropy.linggango.let_there_be_atmosphere.Let_there_be_atmosphere;
 import com.misanthropy.linggango.let_there_be_atmosphere.client.atmosphere.BiomeFx;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -21,6 +23,25 @@ public final class ViewCapture {
     static float fogEnd;
     static boolean fresh;
     static int stamp;
+    private static Vec3 sky;
+    private static ClientLevel skyLevel;
+    private static long skyTick;
+    private static float skyPartial;
+    private static double skyX, skyY, skyZ;
+
+    static Vec3 skyColor(ClientLevel level, Vec3 eye, float partialTick) {
+        long tick = level.getGameTime();
+        if (sky == null || level != skyLevel || tick != skyTick || partialTick != skyPartial || eye.x != skyX || eye.y != skyY || eye.z != skyZ) {
+            sky = level.getSkyColor(eye, partialTick);
+            skyLevel = level;
+            skyTick = tick;
+            skyPartial = partialTick;
+            skyX = eye.x;
+            skyY = eye.y;
+            skyZ = eye.z;
+        }
+        return sky;
+    }
 
     public static void onRenderViewCaptureStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;

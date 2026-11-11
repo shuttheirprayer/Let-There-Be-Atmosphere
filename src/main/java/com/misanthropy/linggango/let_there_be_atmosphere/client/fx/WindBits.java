@@ -241,7 +241,7 @@ public final class WindBits {
         SkyProgram program = SkyProgram.WIND_BITS;
         if (!program.ready()) return;
 
-        simulate();
+        if (Cadence.step()) simulate();
         upload();
         Camera camera = event.getCamera();
         Vec3 eye = camera.getPosition();

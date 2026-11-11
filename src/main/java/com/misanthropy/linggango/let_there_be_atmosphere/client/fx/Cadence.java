@@ -10,7 +10,7 @@ public final class Cadence {
     private Cadence() {}
 
     public static boolean enabled = true;
-    public static int maxInterval = 4;
+    public static int maxInterval = 8;
     public static float minHz = 144F;
 
     private static long frame;
@@ -35,6 +35,10 @@ public final class Cadence {
 
     static int interval() {
         return interval;
+    }
+
+    static boolean step() {
+        return interval <= 1 || frame % interval == 0;
     }
 
     static boolean due(int age, int phase) {

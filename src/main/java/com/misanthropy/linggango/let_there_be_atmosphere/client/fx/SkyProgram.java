@@ -75,12 +75,14 @@ public final class SkyProgram {
             "Transform", "Offset", "Clock", "Sun", "Screen");
     static final SkyProgram WATER_SHEEN = new SkyProgram("water_sheen", new String[]{"DepthSampler"},
             "InverseTransform", "Surface", "Horizon", "Zenith");
-    static final SkyProgram WATER_REFLECT = new SkyProgram("water_reflect", new String[]{"SceneSampler", "DepthSampler", "SolidSampler", "NoiseSampler", "NearSampler", "MaskSampler"},
-            "InverseTransform", "ViewProjection", "Surface", "Waves", "Horizon", "Zenith", "Masked");
-    static final SkyProgram WATER_REFLECT_MIX = new SkyProgram("water_reflect_mix", new String[]{"ReflectSampler", "SceneSampler", "BaseSampler", "DepthSampler", "SolidSampler", "MaskSampler"},
-            "InverseTransform", "Spread", "Masked", "ReflectReproject", "Reused");
-    static final SkyProgram WATER_COPY = new SkyProgram("water_copy", new String[]{"SceneSampler", "MaskSampler"});
-    static final SkyProgram WATER_REFLECT_NEAR = new SkyProgram("water_reflect_near", new String[]{"SolidSampler", "DepthSampler"}, "Masked", "Gather");
+    static final SkyProgram WATER_REFLECT = new SkyProgram("water_reflect", new String[]{"SceneSampler", "DepthSampler", "SolidSampler", "NoiseSampler", "NearSampler", "MaskSampler", "TileSampler"},
+            "InverseTransform", "ViewProjection", "Surface", "Waves", "Horizon", "Zenith", "Tiles");
+    static final SkyProgram WATER_REFLECT_MIX = new SkyProgram("water_reflect_mix", new String[]{"ReflectSampler", "SceneSampler", "BaseSampler", "DepthSampler", "SolidSampler", "MaskSampler", "TileSampler"},
+            "InverseTransform", "Spread", "ReflectReproject", "Reused", "Tiles");
+    static final SkyProgram WATER_COPY = new SkyProgram("water_copy", new String[]{"SceneSampler", "MaskSampler", "TileSampler"}, "Tiles");
+    static final SkyProgram WATER_TILES = new SkyProgram("water_tiles", new String[]{"MaskSampler"});
+    static final SkyProgram WATER_REFLECT_NEAR = new SkyProgram("water_reflect_near", new String[]{"SolidSampler", "DepthSampler"});
+    static final SkyProgram WATER_REFLECT_DEPTH = new SkyProgram("water_reflect_depth", new String[]{"SolidSampler", "DepthSampler"}, "Rows");
     static final SkyProgram CAUSTICS = new SkyProgram("water_caustics", new String[]{"DepthSampler", "NoiseSampler"},
             "InverseTransform", "Surface", "Light");
     static final SkyProgram WATER_RAYS = new SkyProgram("water_rays", new String[]{"DepthSampler", "NoiseSampler"},

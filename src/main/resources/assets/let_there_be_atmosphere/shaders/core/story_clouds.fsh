@@ -26,6 +26,11 @@ void main() {
                           max(texelFetch(DepthSampler, ivec2(p.x, q.y), 0).r, texelFetch(DepthSampler, q, 0).r));
         if (gl_FragCoord.z > scene) discard;
     }
+    if (DepthPass > 0.5 && (Pastel.x > 0.5 || Light.x < 0.5)) {
+        if (Pastel.w > 0.5 && vertexColor.a * ColorModulator.a * (1.0 - smoothstep(FadeRange.x, FadeRange.y, length(relative.xz))) < 0.5) discard;
+        fragColor = vec4(0.0);
+        return;
+    }
     vec3 tint = mix(ColorModulator.rgb, mix(SkyTint.rgb, vec3(1.0), 0.55) * max(max(ColorModulator.r, ColorModulator.g), ColorModulator.b), SkyTint.a * (1.0 - Pastel.x));
     float alpha = vertexColor.a * ColorModulator.a;
     float distance = length(relative.xz);

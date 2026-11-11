@@ -43,4 +43,5 @@ void main() {
     vec3 base = mix(MistFog.rgb, night, 0.55 + 0.2 * day);
     vec3 pastel = mix(vec3(1.0), 0.5 + 0.5 * cos(6.2831853 * (seed + vec3(0.0, 0.33, 0.67))), 0.05);
     vertexColor = vec4(mix(base * pastel, MistFog.rgb, fog), alpha);
+    if (alpha < 0.002) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }

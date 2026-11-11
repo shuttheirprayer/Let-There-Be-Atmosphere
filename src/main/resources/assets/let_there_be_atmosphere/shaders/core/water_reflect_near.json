@@ -8,7 +8,5 @@
         { "name": "DepthSampler" }
     ],
     "uniforms": [
-        { "name": "Masked", "type": "float", "count": 1, "values": [ 1.0 ] },
-        { "name": "Gather", "type": "float", "count": 1, "values": [ 0.0 ] }
     ]
 }

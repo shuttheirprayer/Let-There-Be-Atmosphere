@@ -24,6 +24,7 @@ void main() {
     float sa = (vertex == 1 || vertex == 2) ? 1.0 : -1.0;
     float sb = vertex >= 2 ? 1.0 : -1.0;
     gl_Position = Transform * vec4(center.xyz + (sa * ax + sb * bx) * AxisU + (sa * ay + sb * by) * AxisV, 1.0);
+    gl_Position.z = gl_Position.w;
     texCoord = vec2(center.w + ((vertex == 1 || vertex == 2) ? Tint[quad].a * 0.5 : 0.0), vertex >= 2 ? 0.0 : 1.0);
     vertexColor = vec4(Tint[quad].rgb, 1.0);
     local = vec2(sa * ax + sb * bx, sa * ay + sb * by);

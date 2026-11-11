@@ -6,7 +6,6 @@ uniform sampler2D BaseSampler;
 uniform sampler2D DepthSampler;
 uniform sampler2D SolidSampler;
 uniform sampler2D MaskSampler;
-uniform float Masked;
 uniform mat4 InverseTransform;
 uniform vec4 Spread;
 uniform mat4 ReflectReproject;
@@ -23,7 +22,7 @@ vec3 unproject(vec2 ndc, float depth) {
 
 void main() {
     ivec2 px = ivec2(gl_FragCoord.xy);
-    if (Masked > 0.5 && texelFetch(MaskSampler, px / 2, 0).r < 0.5) discard;
+    if (texelFetch(MaskSampler, px / 2, 0).r < 0.5) discard;
     float depth = texelFetch(DepthSampler, px, 0).r;
     if (depth >= 1.0 || depth >= texelFetch(SolidSampler, px, 0).r) discard;
     ivec2 reflectSize = textureSize(ReflectSampler, 0);

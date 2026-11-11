@@ -1,12 +1,14 @@
 {
-    "vertex": "let_there_be_atmosphere:color_grade",
+    "vertex": "let_there_be_atmosphere:water_tiles",
     "fragment": "let_there_be_atmosphere:water_copy",
     "attributes": [
     ],
     "samplers": [
         { "name": "SceneSampler" },
-        { "name": "MaskSampler" }
+        { "name": "MaskSampler" },
+        { "name": "TileSampler" }
     ],
     "uniforms": [
+        { "name": "Tiles", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
     ]
 }

@@ -168,7 +168,8 @@ void main() {
     if (fade < 1.0) {
         float num = dot(vec3(ViewProjection[0][0], ViewProjection[1][0], ViewProjection[2][0]), r);
         float den = dot(vec3(ViewProjection[0][3], ViewProjection[1][3], ViewProjection[2][3]), r);
-        float column = den > 1.0e-4 ? clamp(num / den, -0.95, 0.95) : (num >= 0.0 ? 0.95 : -0.95);
+        float side = den > 1.0e-4 ? num / den : (num >= 0.0 ? 2.0 : -2.0);
+        float column = clamp(side, -0.95, 0.95);
         vec3 middle = unproject(vec2(column, 0.0), 0.5);
         vec3 rise = unproject(vec2(column, 1.0), 0.5) - middle;
         middle -= eye;
@@ -182,13 +183,14 @@ void main() {
         float top = normalize(middle + rise).y;
         vec2 look = vec2(column, 0.5 * (below + above));
         float ld = depthAt(look);
+        float trust = (1.0 - smoothstep(0.8, 0.95, abs(side))) * smoothstep(0.0, 0.1, top - r.y);
+        open = 1.0 - smoothstep(0.0, 0.25, r.y - top);
         if (ld >= 1.0) {
-            open = 1.0 - smoothstep(0.0, 0.25, r.y - top);
-            sky = mix(sky, texture(SceneSampler, look * 0.5 + 0.5).rgb, open);
+            sky = mix(sky, texture(SceneSampler, look * 0.5 + 0.5).rgb, trust);
         } else {
             vec3 q = unproject(look, ld) - p;
             float along = dot(q, r);
-            open = along > 0.5 ? smoothstep(0.02, 0.06, length(cross(q, r)) / along) : 1.0;
+            if (along > 0.5) open *= mix(1.0, smoothstep(0.02, 0.06, length(cross(q, r)) / along), trust);
         }
         float t = reach;
         for (int i = 0; i < 4; i++) {

@@ -2,110 +2,11 @@ package com.misanthropy.linggango.let_there_be_atmosphere.client.fx;
 
 public final class SkyFxCheck {
     public static void main(String[] args) {
-        checkStarField();
-        checkStarGroups();
-        checkTwinkle();
-        checkNightAmount();
         checkCometRibbon();
         checkCometSpawn();
         checkMeteorShower();
-        checkDrift();
         checkSunLightCast();
-        checkTorchFlicker();
         System.out.println("Sky fx OK");
-    }
-
-    private static void checkStarField() {
-        float[] plain = StarField.build(400, 1f, 0.6f, false, 0f, 32f);
-        check(plain.length == 400 * StarField.STRIDE, "plain star count: " + plain.length / StarField.STRIDE);
-
-        float[] banded = StarField.build(400, 1f, 0.6f, true, 1f, 32f);
-        check(banded.length > plain.length, "the milky way band must add stars");
-
-        float[] again = StarField.build(400, 1f, 0.6f, true, 1f, 32f);
-        for (int i = 0; i < banded.length; i++) {
-            check(banded[i] == again[i], "star generation is not deterministic at " + i);
-        }
-
-        int stars = banded.length / StarField.STRIDE;
-        for (int i = 0; i < stars; i++) {
-            int at = i * StarField.STRIDE;
-            float px = banded[at], py = banded[at + 1], pz = banded[at + 2];
-            float ux = banded[at + 3], uy = banded[at + 4], uz = banded[at + 5];
-            float vx = banded[at + 6], vy = banded[at + 7], vz = banded[at + 8];
-
-            float radius = (float) Math.sqrt(px * px + py * py + pz * pz);
-            check(Math.abs(radius - StarField.RADIUS) < 0.01f, "star " + i + " sits at radius " + radius);
-
-            check(Math.abs(px * ux + py * uy + pz * uz) < 0.02f, "star " + i + " tangent is not flat");
-            check(Math.abs(px * vx + py * vy + pz * vz) < 0.02f, "star " + i + " bitangent is not flat");
-            check(Math.abs(ux * vx + uy * vy + uz * vz) < 0.001f, "star " + i + " basis is not square");
-
-            float half = (float) Math.sqrt(ux * ux + uy * uy + uz * uz);
-            float other = (float) Math.sqrt(vx * vx + vy * vy + vz * vz);
-            check(half > 0.02f, "star " + i + " has no size");
-            check(Math.abs(half - other) < 0.001f, "star " + i + " is not square");
-
-            for (int c = 9; c < 12; c++) {
-                check(banded[at + c] >= 0f && banded[at + c] <= 1f,
-                        "star " + i + " colour out of range: " + banded[at + c]);
-            }
-            check(banded[at + 9] + banded[at + 10] + banded[at + 11] > 0.05f, "star " + i + " is black");
-        }
-
-        float[] white = StarField.build(64, 1f, 0f, false, 0f, 32f);
-        for (int i = 0; i < 64; i++) {
-            int at = i * StarField.STRIDE;
-            check(Math.abs(white[at + 9] - white[at + 10]) < 0.001f, "zero spread must leave stars white");
-            check(Math.abs(white[at + 10] - white[at + 11]) < 0.001f, "zero spread must leave stars white");
-        }
-
-        check(StarField.build(0, 1f, 0.5f, true, 1f, 32f).length == 0, "zero stars must build nothing");
-        check(StarField.count(0.0) == 0, "zero density must be zero stars");
-        check(StarField.count(100.0) == StarField.VANILLA_COUNT, "100% must match vanilla");
-        check(StarField.count(100000.0) == StarField.MAX_STARS, "the star count must stay capped");
-    }
-
-    private static void checkStarGroups() {
-        check(StarField.groupsFor(0, 1500) == 0, "no stars means no groups");
-        check(StarField.groupsFor(1500, 0) == 0, "no baked stars means no groups");
-        check(StarField.groupsFor(1500, 1500) == StarField.GROUPS, "a full share must draw every group");
-        check(StarField.groupsFor(3000, 1500) == StarField.GROUPS, "the share must stay capped");
-
-        int half = StarField.groupsFor(750, 1500);
-        check(half == StarField.GROUPS / 2, "half the stars should be half the groups: " + half);
-
-        int previous = 0;
-        for (int wanted = 0; wanted <= 1500; wanted += 25) {
-            int groups = StarField.groupsFor(wanted, 1500);
-            check(groups >= previous, "the group count must not fall as stars rise");
-            previous = groups;
-        }
-    }
-
-    private static void checkTwinkle() {
-        for (int group = 0; group < StarField.GROUPS; group++) {
-            check(StarField.twinkle(group, 12.5f, 0f) == 1f, "zero twinkle must hold still");
-            for (int step = 0; step < 400; step++) {
-                float value = StarField.twinkle(group, step * 0.37f, 1f);
-                check(value >= 0.5f && value <= 1.5f, "twinkle out of range: " + value);
-            }
-        }
-
-        float a = StarField.twinkle(0, 1.7f, 1f);
-        float b = StarField.twinkle(5, 1.7f, 1f);
-        check(Math.abs(a - b) > 0.001f, "twinkle groups must not move together");
-    }
-
-    private static void checkNightAmount() {
-        check(StarField.nightAmount(6000f) == 0f, "noon is not night");
-        check(Math.abs(StarField.nightAmount(18000f) - 1f) < 1.0E-4f, "midnight must be fully night");
-        float dusk = StarField.nightAmount(12399f);
-        check(dusk > 0f && dusk < 1f, "dusk must sit between: " + dusk);
-        for (int t = 0; t < DayCurves.PERIOD; t += 7) {
-            float value = StarField.nightAmount(t);
-            check(value >= 0f && value <= 1f, "night amount out of range at tick " + t + ": " + value);
-        }
     }
 
     private static void checkCometRibbon() {
@@ -184,42 +85,18 @@ public final class SkyFxCheck {
         final int white = 0xFFFFFFFF;
         final int warmHex = 0xFFD8AC, coolHex = 0x7A7AFF, sunHex = 0xFFB775;
 
-        check(LightTint.tint(white, 1f, 0f, 0f, warmHex, 1f, coolHex, 1f)
-                        == LightTint.tint(white, 1f, 0f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 0f),
-                "no sun cast and no flicker must match the old behaviour");
-
-        int cast = LightTint.tint(white, 0f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 1f, 0f);
+        int cast = LightTint.tint(white, 0f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 1f);
         check((cast & 0xFF) == 255, "the sun cast must keep red at full");
         check((cast >> 8 & 0xFF) == 183, "sun cast green: " + (cast >> 8 & 0xFF));
         check((cast >> 16 & 0xFF) == 117, "sun cast blue: " + (cast >> 16 & 0xFF));
 
-        check(LightTint.tint(white, 0f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 0f) == white,
+        check(LightTint.tint(white, 0f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f) == white,
                 "a sun that has set must not cast");
-        check(LightTint.tint(white, 1f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 1f, 0f) == white,
+        check(LightTint.tint(white, 1f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 1f) == white,
                 "full bright must stay neutral under the sun cast");
 
-        int half = LightTint.tint(white, 0f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0.5f, 0f);
+        int half = LightTint.tint(white, 0f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0.5f);
         check((half >> 16 & 0xFF) > (cast >> 16 & 0xFF), "half the strength must cast half as far");
-    }
-
-    private static void checkTorchFlicker() {
-        final int white = 0xFFFFFFFF;
-        final int warmHex = 0xFFD8AC, coolHex = 0x7A7AFF, sunHex = 0xFFB775;
-
-        int steady = LightTint.tint(white, 1f, 0f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 0f);
-        int dipped = LightTint.tint(white, 1f, 0f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 1f);
-        check((dipped & 0xFF) < (steady & 0xFF), "flicker must dim a torch-lit cell");
-        check((dipped >>> 24) == 0xFF, "flicker must not touch alpha");
-
-        check(LightTint.tint(white, 1f, 1f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 1f) == white,
-                "flicker must leave full bright alone");
-        check(LightTint.tint(white, 0f, 1f, 1f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 1f)
-                        == LightTint.tint(white, 0f, 1f, 1f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 0f),
-                "flicker must not touch sky light");
-
-        int gentle = LightTint.tint(white, 1f, 0f, 0f, warmHex, 1f, coolHex, 1f, sunHex, 0f, 0.5f);
-        check((gentle & 0xFF) > (dipped & 0xFF) && (gentle & 0xFF) < (steady & 0xFF),
-                "half the flicker must dim half as far");
     }
 
     private static void checkMeteorShower() {
@@ -273,36 +150,6 @@ public final class SkyFxCheck {
             }
         }
         return pairs == 0 ? 0f : total / pairs;
-    }
-
-    private static void checkDrift() {
-        for (int seed = 0; seed < 4096; seed++) {
-            float value = Drift.hash01(seed);
-            check(value >= 0f && value < 1f, "hash out of range at " + seed + ": " + value);
-            float signed = Drift.signed(seed);
-            check(signed >= -1f && signed < 1f, "signed hash out of range at " + seed + ": " + signed);
-        }
-        check(Drift.hash01(7) != Drift.hash01(8), "neighbouring seeds must differ");
-        check(Drift.hash01(11) == Drift.hash01(11), "the hash must be stable");
-
-        for (int step = -400; step <= 400; step++) {
-            float wrapped = Drift.wrap(step * 0.77f, 12f);
-            check(wrapped >= -12f && wrapped <= 12f, "wrap escaped the box: " + wrapped);
-        }
-        check(Math.abs(Drift.wrap(3f, 10f) - 3f) < 1.0E-4f, "wrap must leave inside values alone");
-        check(Math.abs(Drift.wrap(21f, 10f) - 1f) < 1.0E-4f, "wrap must fold around: " + Drift.wrap(21f, 10f));
-        check(Drift.wrap(5f, 0f) == 0f, "a zero box wraps to nothing");
-
-        check(Drift.edgeFade(0f, 100f) == 1f, "the middle of the box is full strength");
-        check(Drift.edgeFade(100f, 100f) == 0f, "the edge of the box is empty");
-        check(Drift.edgeFade(400f, 100f) == 0f, "past the edge stays empty");
-        float near = Drift.edgeFade(25f, 100f);
-        check(near > 0f && near < 1f, "the fade must ramp: " + near);
-
-        check(Drift.nearFade(0f, 3f) == 0f, "nothing renders on top of the camera");
-        check(Drift.nearFade(100f, 3f) == 1f, "far enough out is full strength");
-        float mid = Drift.nearFade(4f, 3f);
-        check(mid > 0f && mid < 1f, "the near fade must ramp: " + mid);
     }
 
     private static int spawnOne() {

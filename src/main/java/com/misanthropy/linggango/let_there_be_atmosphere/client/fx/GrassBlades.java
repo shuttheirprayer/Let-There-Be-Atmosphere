@@ -289,8 +289,26 @@ public final class GrassBlades {
         SkyProgram program = SkyProgram.BLADES;
         if (!program.ready()) return;
 
-        upload();
         Vec3 eye = event.getCamera().getPosition();
+        boolean tall = FxConfig.grassBladesStyle == 1;
+        int perSlot = PER_CHUNK * (tall ? TALL_BLADES : BLADES) * 6;
+        FIRSTS.clear();
+        COUNTS.clear();
+        for (int slot = 0; slot < PLACED.length; slot++) {
+            if (PLACED[slot] == 0) continue;
+            double x0 = SLOT_X[slot] << 4, z0 = SLOT_Z[slot] << 4;
+            double dx = Math.max(Math.max(x0 - eye.x, eye.x - x0 - 16.0), 0.0);
+            double dz = Math.max(Math.max(z0 - eye.z, eye.z - z0 - 16.0), 0.0);
+            double dy = Math.max(Math.max(LOW[slot] - eye.y, eye.y - HIGH[slot] - 1.0), 0.0);
+            if (dx * dx + dy * dy + dz * dz > (RADIUS + 1.0) * (RADIUS + 1.0)) continue;
+            if (!event.getFrustum().isVisible(BOX[slot])) continue;
+            FIRSTS.put(slot * perSlot);
+            COUNTS.put(PLACED[slot] * perSlot / PER_CHUNK);
+        }
+        FIRSTS.flip();
+        COUNTS.flip();
+        if (!FIRSTS.hasRemaining()) return;
+        upload();
         float ox = (float) (anchorX - eye.x);
         float oy = (float) (anchorY - eye.y);
         float oz = (float) (anchorZ - eye.z);
@@ -305,7 +323,6 @@ public final class GrassBlades {
         program.begin();
         SkyProgram.texture(2, data);
         SkyProgram.texture(1, LightTint.lightmap.getId());
-        boolean tall = FxConfig.grassBladesStyle == 1;
         SkyProgram.texture(0, SkyProgram.texture(tall ? TALL : SHEET));
         program.transform(0, MATRIX);
         GL20.glUniform3f(program.uniform(1), ox, oy, oz);
@@ -323,23 +340,7 @@ public final class GrassBlades {
             float[] p = WindSway.PUSH[i];
             GL20.glUniform4f(program.uniform(5 + i), p[0] - ox, p[1] - oy, p[2] - oz, p[3]);
         }
-        int perSlot = PER_CHUNK * (tall ? TALL_BLADES : BLADES) * 6;
-        FIRSTS.clear();
-        COUNTS.clear();
-        for (int slot = 0; slot < PLACED.length; slot++) {
-            if (PLACED[slot] == 0) continue;
-            double x0 = SLOT_X[slot] << 4, z0 = SLOT_Z[slot] << 4;
-            double dx = Math.max(Math.max(x0 - eye.x, eye.x - x0 - 16.0), 0.0);
-            double dz = Math.max(Math.max(z0 - eye.z, eye.z - z0 - 16.0), 0.0);
-            double dy = Math.max(Math.max(LOW[slot] - eye.y, eye.y - HIGH[slot] - 1.0), 0.0);
-            if (dx * dx + dy * dy + dz * dz > (RADIUS + 1.0) * (RADIUS + 1.0)) continue;
-            if (!event.getFrustum().isVisible(BOX[slot])) continue;
-            FIRSTS.put(slot * perSlot);
-            COUNTS.put(PLACED[slot] * perSlot / PER_CHUNK);
-        }
-        FIRSTS.flip();
-        COUNTS.flip();
-        if (FIRSTS.hasRemaining()) GL14.glMultiDrawArrays(GL11.GL_TRIANGLES, FIRSTS, COUNTS);
+        GL14.glMultiDrawArrays(GL11.GL_TRIANGLES, FIRSTS, COUNTS);
         program.end();
         RenderSystem.enableCull();
     }

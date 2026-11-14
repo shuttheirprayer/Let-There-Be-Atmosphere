@@ -131,7 +131,11 @@ public final class WindSway {
                 float push = bend * (0.55 + 0.9 * gust);
                 vec2 lean = along * (push + sway * 0.35 * calm * (0.3 + bend) + quiver * 0.06 * bend)
                           + side * (sway * 0.12 * calm + quiver * 0.035 * bend);
-                vec2 off = lean * amp * u_LinggangoWind.w;
+                lean *= u_LinggangoWind.w;
+                // cap the push before the height curve, or tall stems go rigid above the cap
+                float reach = length(lean);
+                if (reach > 1.6) lean *= 1.6 / reach;
+                vec2 off = lean * amp;
                 off += linggango_push(u_LinggangoPush0, position, height) + linggango_push(u_LinggangoPush1, position, height)
                      + linggango_push(u_LinggangoPush2, position, height) + linggango_push(u_LinggangoPush3, position, height);
                 float len = length(off);
@@ -165,10 +169,15 @@ public final class WindSway {
         if (roofed(level, pos)) return STILL;
         Block block = state.getBlock();
         boolean grows = block instanceof GrowingPlantBlock;
-        if (kind != PLANT || !grows && !(block instanceof SugarCaneBlock)) return 0;
+        if (kind != PLANT || !grows && !(block instanceof SugarCaneBlock) && !stems(block)) return 0;
         int below = run(level, pos, Direction.DOWN, block), above = run(level, pos, Direction.UP, block);
         boolean hangs = grows && growth(block) == Direction.DOWN;
         return (below + above + 1) | (hangs ? above : below) << 5 | (hangs ? HANGS : 0) | (grows ? GROWS : 0);
+    }
+
+    // mgnflowers tall flowers stack one block with a "stem" property, like sugar cane
+    private static boolean stems(Block block) {
+        return block.getStateDefinition().getProperty("stem") != null;
     }
 
     private static boolean roofed(BlockGetter level, BlockPos pos) {

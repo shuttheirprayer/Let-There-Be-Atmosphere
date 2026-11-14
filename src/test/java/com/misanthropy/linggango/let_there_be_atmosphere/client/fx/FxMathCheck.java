@@ -9,7 +9,8 @@ public final class FxMathCheck {
         checkSkyLightTrack();
         checkLightTint();
         checkWeatherTint();
-        System.out.println("Fx math OK");
+        checkStackedSway();
+        System.out.println("Fx math is OK");
     }
 
     private static void checkNarrowCurve() {
@@ -197,6 +198,20 @@ public final class FxMathCheck {
         int half = WeatherTint.color(rain, snow, 0.5f);
         check((half >> 16 & 0xFF) == 0xB1, "half-mixed red: " + Integer.toHexString(half));
         check(half != rain && half != snow, "half mix should land between the two");
+    }
+
+    private static void checkStackedSway() {
+        int tall = 3;
+        int last = 0;
+        for (int below = 0; below < tall; below++) {
+            int column = tall | below << 5;
+            int base = WindSway.bits(WindSway.PLANT, null, 0F, column) >> 5 & 7;
+            int top = WindSway.bits(WindSway.PLANT, null, 1F, column) >> 5 & 7;
+            check(base == last, "stack block " + below + " starts at " + base + ", block under it ended at " + last);
+            check(top > base, "stack block " + below + " must lean more at its top");
+            last = top;
+        }
+        check(last == 7, "a stack top must sway fully: " + last);
     }
 
     private static void check(boolean condition, String what) {
